@@ -1,0 +1,49 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><style>body{margin:0;background:#fff}canvas{display:block}</style></head>
+<body>
+<script src="../../lib/three.min.js"></script>
+<script src="helpers.js"></script>
+<script src="model.js"></script>
+<script>
+const spec={id:'vihals-chair-0',w:49,d:55,h:81,seatH:48,color:'#929683',color2:'#78846C',model:'vihals-chair'};
+const col=new THREE.Color(spec.color), col2=new THREE.Color(spec.color2);
+const matlib={
+  fab:new THREE.MeshStandardMaterial({map:fabricTexture(),color:col,roughness:.95}),
+  fabD:new THREE.MeshStandardMaterial({map:fabricTexture(),color:col.clone().multiplyScalar(.86),roughness:.95}),
+  wood:new THREE.MeshStandardMaterial({color:col}),
+  chrome:new THREE.MeshStandardMaterial({color:0xc6cad0,roughness:.14,metalness:.94}),
+  steel:new THREE.MeshStandardMaterial({color:0x9aa0a6,roughness:.35,metalness:.75}),
+  black:new THREE.MeshStandardMaterial({color:0x24262a,roughness:.44,metalness:.5}),
+  white:new THREE.MeshStandardMaterial({color:0xeeece7,roughness:.55}),
+  plastic:new THREE.MeshStandardMaterial({color:0x33363b,roughness:.6}),
+  glass:new THREE.MeshPhysicalMaterial({color:0xaecbe0,transparent:true,opacity:.28}),
+};
+const g=new THREE.Group();
+MODELS['vihals-chair'](modelCtx(g,spec,col,col2,matlib));
+let nm=0; g.traverse(o=>{if(o.isMesh)nm++;});
+const bb=new THREE.Box3().setFromObject(g); const sz=new THREE.Vector3(); bb.getSize(sz);
+const F=30.48;
+window.__info={meshes:nm, w:(sz.x*F).toFixed(1), h:(sz.y*F).toFixed(1), d:(sz.z*F).toFixed(1),
+  minY:(bb.min.y*F).toFixed(1), maxY:(bb.max.y*F).toFixed(1), minZ:(bb.min.z*F).toFixed(1), maxZ:(bb.max.z*F).toFixed(1),
+  minX:(bb.min.x*F).toFixed(1), maxX:(bb.max.x*F).toFixed(1)};
+
+const W=520,H=560, N=4;
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(W*N,H); renderer.setClearColor(0xffffff,1);
+renderer.outputEncoding=THREE.sRGBEncoding; renderer.shadowMap.enabled=true;
+document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene(); scene.add(g);
+scene.add(new THREE.HemisphereLight(0xffffff,0xdddddd,0.55));
+const d1=new THREE.DirectionalLight(0xffffff,0.85); d1.position.set(4,7,6); scene.add(d1);
+const d2=new THREE.DirectionalLight(0xffffff,0.3); d2.position.set(-5,4,-4); scene.add(d2);
+const ctr=new THREE.Vector3(0,cm2ft(42),0);
+// views: front(+z), side(+x), 3/4, back
+const views=[[-0.75,0.42,0.95],[1,0,0],[0,0.12,1],[-0.6,0.35,-1]];
+views.forEach((v,i)=>{
+  const cam=new THREE.OrthographicCamera(-1.5,1.5,1.7,-1.7,0.01,60);
+  const dir=new THREE.Vector3(v[0],v[1],v[2]).normalize().multiplyScalar(12);
+  cam.position.copy(ctr).add(dir); cam.lookAt(ctr);
+  renderer.setViewport(i*W,0,W,H); renderer.setScissor(i*W,0,W,H); renderer.setScissorTest(true);
+  renderer.render(scene,cam);
+});
+document.title='ok';
+</script></body></html>

@@ -1,0 +1,16 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><pre id="o"></pre>
+<script src="../../lib/three.min.js"></script><script src="helpers.js"></script><script src="model.js"></script>
+<script>
+const spec={id:'v',w:49,d:55,h:81,seatH:48,color:'#929683',color2:'#78846C'};
+const col=new THREE.Color(spec.color),col2=new THREE.Color(spec.color2);
+const ml={fab:new THREE.MeshStandardMaterial(),fabD:new THREE.MeshStandardMaterial(),wood:new THREE.MeshStandardMaterial(),chrome:new THREE.MeshStandardMaterial(),steel:new THREE.MeshStandardMaterial(),black:new THREE.MeshStandardMaterial(),white:new THREE.MeshStandardMaterial(),plastic:new THREE.MeshStandardMaterial(),glass:new THREE.MeshStandardMaterial()};
+const g=new THREE.Group();
+try{ MODELS['vihals-chair'](modelCtx(g,spec,col,col2,ml)); }catch(e){ document.getElementById('o').textContent='ERR '+e.message+'\n'+e.stack; throw e; }
+let n=0; g.traverse(o=>{if(o.isMesh)n++;});
+const b=new THREE.Box3().setFromObject(g),F=30.48;
+document.getElementById('o').textContent=JSON.stringify({meshes:n,
+ x:[+(b.min.x*F).toFixed(1),+(b.max.x*F).toFixed(1)],
+ y:[+(b.min.y*F).toFixed(1),+(b.max.y*F).toFixed(1)],
+ z:[+(b.min.z*F).toFixed(1),+(b.max.z*F).toFixed(1)],
+ W:+((b.max.x-b.min.x)*F).toFixed(1),H:+((b.max.y-b.min.y)*F).toFixed(1),D:+((b.max.z-b.min.z)*F).toFixed(1)},null,1);
+</script></body></html>

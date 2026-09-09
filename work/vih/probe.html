@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><pre id="o"></pre>
+<script src="../../lib/three.min.js"></script><script src="helpers.js"></script>
+<script>
+const L=[]; const F=1;
+function bb(geo,label){geo.computeBoundingBox();const b=geo.boundingBox;
+ L.push(label+' x['+b.min.x.toFixed(3)+','+b.max.x.toFixed(3)+'] y['+b.min.y.toFixed(3)+','+b.max.y.toFixed(3)+'] z['+b.min.z.toFixed(3)+','+b.max.z.toFixed(3)+']');}
+const sh=new THREE.Shape([[-10,-10],[10,-10],[10,10],[-10,10]].map(p=>new THREE.Vector2(p[0],p[1])));
+bb(new THREE.ExtrudeGeometry(sh,{depth:4,bevelEnabled:false}),'noBevel d4');
+bb(new THREE.ExtrudeGeometry(sh,{depth:2,bevelEnabled:true,bevelSize:1,bevelThickness:1,bevelSegments:3}),'bevel1 d2');
+bb(rboxGeo(2,1,3,0.25,3),'rbox 2x1x3 r.25');
+L.push('THREE '+THREE.REVISION);
+document.getElementById('o').textContent=L.join('\n');
+</script></body></html>

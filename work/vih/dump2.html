@@ -1,0 +1,13 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"></head><body><pre id="o"></pre>
+<script src="../../lib/three.min.js"></script><script src="helpers.js"></script><script src="model.js"></script>
+<script>
+const spec={id:'v',w:49,d:55,h:81,seatH:48,color:'#929683',color2:'#78846C'};
+const col=new THREE.Color(spec.color),col2=new THREE.Color(spec.color2);
+const ml={fab:new THREE.MeshStandardMaterial(),fabD:new THREE.MeshStandardMaterial(),wood:new THREE.MeshStandardMaterial(),chrome:new THREE.MeshStandardMaterial(),steel:new THREE.MeshStandardMaterial(),black:new THREE.MeshStandardMaterial(),white:new THREE.MeshStandardMaterial(),plastic:new THREE.MeshStandardMaterial(),glass:new THREE.MeshStandardMaterial()};
+const g=new THREE.Group();
+MODELS['vihals-chair'](modelCtx(g,spec,col,col2,ml));
+const F=30.48; let out=[],i=0;
+g.traverse(o=>{ if(!o.isMesh) return; const b=new THREE.Box3().setFromObject(o);
+  out.push([i++, o.geometry.type, [b.min.x*F,b.max.x*F].map(v=>+v.toFixed(1)),[b.min.y*F,b.max.y*F].map(v=>+v.toFixed(1)),[b.min.z*F,b.max.z*F].map(v=>+v.toFixed(1))].join(' | '));});
+document.getElementById('o').textContent=out.join('\n');
+</script></body></html>
