@@ -1933,8 +1933,8 @@ function fpJumpTo(fx, fz){
   three.fpDir=dir.clone();
   setCamMode('fp');
   three.cam.position.set(fx, EYE_H, fz);
-  three.controls.target.copy(three.cam.position).addScaledVector(dir, 6);
-  three.controls.update();
+  three.fpYaw=Math.atan2(dir.x, dir.z); three.fpPitch=0;
+  fpAim();
 }
 svg.addEventListener('dblclick', ev=>{
   if(!wallEdit.on){
@@ -2012,7 +2012,9 @@ function init3D(){
     cam.aspect=w/h; cam.updateProjectionMatrix();
   };
   new ResizeObserver(resize).observe(canvas.parentElement); resize();
-  (function loop(){ requestAnimationFrame(loop); fpStep(); controls.update(); if(!three.photo) renderer.render(scene,cam); })();
+  (function loop(){ requestAnimationFrame(loop); fpStep();
+    if(three.camMode!=='fp') controls.update();          // FP 由 fpAim 直接控相机
+    if(!three.photo) renderer.render(scene,cam); })();
 }
 /* 由颜色贴图生成法线贴图（Sobel），给木纹/织物真实的微起伏与掠射高光 */
 const _nrmCache=new WeakMap();
@@ -2041,6 +2043,22 @@ function normalFromTexture(tex, strength){
   const t=new THREE.CanvasTexture(c);
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.copy(tex.repeat);
   _nrmCache.set(tex,t); return t;
+}
+let _steelTex=null;
+/* 拉丝不锈钢的粗糙度贴图：竖向细密拉丝 → 沿纹理方向拉长高光 */
+function brushedSteelTexture(){
+  if(_steelTex) return _steelTex;
+  const W=64,H=512, c=document.createElement('canvas'); c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  g.fillStyle='#5c5c5c'; g.fillRect(0,0,W,H);           // 基准粗糙度
+  for(let i=0;i<520;i++){
+    const x=Math.random()*W, v=Math.random()<0.5?255:0;
+    g.strokeStyle=`rgba(${v},${v},${v},${0.02+Math.random()*0.055})`;
+    g.lineWidth=0.4+Math.random()*1.3;
+    g.beginPath(); g.moveTo(x, Math.random()*H*0.3); g.lineTo(x+(Math.random()-.5)*1.5, H); g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(3,1.2); _steelTex=t; return t;
 }
 let _woodTexCache=null;
 /* 地板：深冷灰褐宽板（对照 704/705 实拍——深烟熏橡木，偏冷灰不偏橙） */
@@ -2324,7 +2342,8 @@ function buildStatic3D(){
   }
   const scene = new THREE.Group();
   three.scene.add(scene); three.staticGroup = scene;
-  const matWall = new THREE.MeshStandardMaterial({color:0xd8d5d0, roughness:.97, envMapIntensity:.28});
+  const matWall = new THREE.MeshPhysicalMaterial({color:0xd8d5d0, roughness:1.0,
+    specularIntensity:.05, envMapIntensity:.10});   // 哑光乳胶漆：几乎不反光
   const matGlass = new THREE.MeshPhysicalMaterial({color:0xa8c8e8, transparent:true, opacity:.18, roughness:.05, metalness:.1});
   const matFrame = new THREE.MeshStandardMaterial({color:0x1b1d20, roughness:.45, metalness:.5});
   const matDark = new THREE.MeshStandardMaterial({color:0x2a2d33, roughness:.8, side:THREE.DoubleSide});
@@ -2339,7 +2358,8 @@ function buildStatic3D(){
   floor.rotation.x = Math.PI/2; floor.receiveShadow=true;
   // 天花板：法线朝上 + BackSide → 只在室内（从下往上看）可见，俯视娃娃屋视角自动穿透
   const ceil = new THREE.Mesh(new THREE.ShapeGeometry(shape),
-    new THREE.MeshStandardMaterial({color:0xe4e2de, roughness:.98, envMapIntensity:.22, side:THREE.FrontSide}));
+    new THREE.MeshPhysicalMaterial({color:0xe4e2de, roughness:1.0, specularIntensity:.04,
+      envMapIntensity:.08, side:THREE.FrontSide}));
   ceil.rotation.x = Math.PI/2; ceil.position.y = CEIL_H; ceil.receiveShadow = true;
   scene.add(ceil);
   // ShapeGeometry 在 xy 平面, rotate 后 y->z
@@ -2510,7 +2530,8 @@ function buildStatic3D(){
     }
   }
   // 门扇 3D：北美常见白色平板内门；入户门深木色
-  const matDoorW = new THREE.MeshStandardMaterial({color:0xe6e3dd, roughness:.55, envMapIntensity:.35});
+  const matDoorW = new THREE.MeshPhysicalMaterial({color:0xe6e3dd, roughness:.72,
+    specularIntensity:.28, envMapIntensity:.22});   // 白色门：半哑光
   const matDoorWood = new THREE.MeshStandardMaterial({color:0x5d3d24, roughness:.45});
   const matHandle = new THREE.MeshStandardMaterial({color:0xb9bcc2, roughness:.3, metalness:.7});
   const DOOR_H = 6.7;
@@ -2588,7 +2609,8 @@ function buildStatic3D(){
   const kc = new THREE.Mesh(new THREE.BoxGeometry(9.6, 3.0, 2.41), matCab);
   kc.position.set(26.18, 1.5, 14.33); kc.castShadow=true; scene.add(kc);
   // 冰箱（不锈钢双门）
-  const matSteel = new THREE.MeshStandardMaterial({color:0xb9bdc2, roughness:.35, metalness:.55});
+  const matSteel = new THREE.MeshStandardMaterial({color:0xc9ccd0, roughness:.38, metalness:1.0,
+    roughnessMap:brushedSteelTexture(), envMapIntensity:1.0});   // 真不锈钢：全金属+拉丝
   const mChromeF = new THREE.MeshStandardMaterial({color:0xd2d5da, roughness:.25, metalness:.85});
   const FW=2.95, FCX=19.83;                                    // 法式双开门冰箱 90cm 宽
   const fridge = new THREE.Mesh(new THREE.BoxGeometry(FW, 5.95, 2.45), matSteel);
@@ -2951,10 +2973,17 @@ function furn3D(it, spec){
     };
     if(kind==='downlight'){
       const r=wf/2;
-      cyl(r, .18, trim, 0, CEIL_H-.18);                       // 外圈
-      const lens=new THREE.Mesh(new THREE.CylinderGeometry(r*0.82,r*0.82,.05,20), emis);
-      lens.position.set(0, CEIL_H-.19, 0); g.add(lens);
-      P(CEIL_H-0.25, 26, 1.25);
+      // 嵌入式：只有薄边圈与发光面露在天花面上，筒体在天花之上（室内看不见）
+      const ring=new THREE.Mesh(new THREE.CylinderGeometry(r, r, .035, 24), trim);
+      ring.position.set(0, CEIL_H-.017, 0); g.add(ring);                       // 齐平边圈
+      const cone=new THREE.Mesh(new THREE.CylinderGeometry(r*0.90, r*0.72, .30, 24, 1, true),
+        new THREE.MeshStandardMaterial({color:0xf2f0ec, roughness:.35, side:THREE.DoubleSide}));
+      cone.position.set(0, CEIL_H+.13, 0); g.add(cone);                        // 内反射杯（凹进去）
+      const lens=new THREE.Mesh(new THREE.CylinderGeometry(r*0.72,r*0.72,.02,24), emis);
+      lens.position.set(0, CEIL_H+.02, 0); g.add(lens);                        // 发光面在天花之上→显凹陷
+      const can=new THREE.Mesh(new THREE.CylinderGeometry(r*1.05, r*1.05, .48, 16), trim);
+      can.position.set(0, CEIL_H+.30, 0); g.add(can);                          // 筒体（藏在天花上方）
+      P(CEIL_H-0.04, 26, 1.25);
     } else if(kind==='ceilingLight'){
       const r=wf/2;
       const dome=new THREE.Mesh(new THREE.SphereGeometry(r,24,12,0,Math.PI*2,Math.PI*0.52,Math.PI*0.48), emis);
@@ -3552,18 +3581,21 @@ function setCamMode(m){
   $('#camFP').classList.toggle('on', m==='fp');
   const {cam, controls} = three;
   if(m==='fp'){
-    // 站到客厅中央，视线朝西北落地窗
     const p=three.fpPos || new THREE.Vector3(22, EYE_H, 27);
     cam.position.copy(p);
-    const dir = three.fpDir || new THREE.Vector3(-0.75,-0.06,-0.66).normalize();
-    controls.target.copy(p).addScaledVector(dir, 6);
-    controls.minDistance=1.5; controls.maxDistance=14;
-    controls.maxPolarAngle=Math.PI*0.86;
+    const dir = (three.fpDir || new THREE.Vector3(-0.75,-0.06,-0.66)).clone().normalize();
+    three.fpYaw = Math.atan2(dir.x, dir.z);
+    three.fpPitch = Math.asin(Math.max(-1,Math.min(1,dir.y)));
+    // 第一人称：完全停用 OrbitControls（它会把俯仰夹到水平面并反推相机位置 → 转头时升高/翻向）
+    controls.enabled=false;
     cam.fov=68; cam.updateProjectionMatrix();
-    $('#hint').innerHTML='室内视角：左键拖动=环视 · <b>W/A/S/D 或方向键=走动</b>（Shift 加速）· 滚轮=前后 · 切回娃娃屋看全局';
+    fpAim();
+    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>W/A/S/D 或方向键=走动</b>（Shift 加速）· 滚轮=前后移动 · 右键拖动=平移站位';
   } else {
     if(three.camMode!=='doll'){ three.fpPos=cam.position.clone();
       three.fpDir=controls.target.clone().sub(cam.position).normalize(); }
+    controls.enabled=true;
+    controls.enableRotate=true; controls.enablePan=true; controls.enableZoom=true;
     controls.minDistance=0; controls.maxDistance=Infinity;
     controls.maxPolarAngle=Math.PI/2-0.02;
     cam.fov=55; cam.updateProjectionMatrix();
@@ -3573,6 +3605,53 @@ function setCamMode(m){
   applyBackdrop(); applyLightMode();
   controls.update();
 }
+/* 第一人称：只改朝向，站立位置不动（OrbitControls 是绕目标公转，会把人挪走） */
+function fpAim(){
+  if(!three) return;
+  const {cam, controls}=three;
+  const y=three.fpYaw||0, p=three.fpPitch||0;
+  const dir=new THREE.Vector3(Math.sin(y)*Math.cos(p), Math.sin(p), Math.cos(y)*Math.cos(p));
+  cam.up.set(0,1,0);
+  cam.lookAt(cam.position.x+dir.x, cam.position.y+dir.y, cam.position.z+dir.z);  // 直接定朝向
+  controls.target.copy(cam.position).addScaledVector(dir, 6);                     // 仅为切回娃娃屋时保持连续
+  three.fpDir=dir.clone();
+  return dir;
+}
+function fpForward(){ const y=three.fpYaw||0;
+  return new THREE.Vector3(Math.sin(y),0,Math.cos(y)).normalize(); }
+(function installFPLook(){
+  const canvas=$('#c3d'); if(!canvas) return;
+  let drag=null;
+  canvas.addEventListener('pointerdown', e=>{
+    if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+    drag={x:e.clientX, y:e.clientY, btn:e.button};
+    try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
+  });
+  canvas.addEventListener('pointermove', e=>{
+    if(!drag || !three || three.camMode!=='fp') return;
+    const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+    drag.x=e.clientX; drag.y=e.clientY;
+    if(drag.btn===2){                       // 右键=平移站位（贴地滑动）
+      const f=fpForward(), r=new THREE.Vector3().crossVectors(f,new THREE.Vector3(0,1,0)).normalize();
+      const mv=new THREE.Vector3().addScaledVector(r,-dx*0.012).addScaledVector(f, dy*0.012);
+      three.cam.position.add(mv); three.cam.position.y=EYE_H;
+    } else {                                // 左键=原地转头（与娃娃屋一致的"抓住场景拖动"手感）
+      three.fpYaw   += dx*0.0045;
+      three.fpPitch  = Math.max(-1.25, Math.min(1.25, three.fpPitch + dy*0.0045));
+    }
+    fpAim();
+  });
+  const end=e=>{ if(drag){ drag=null; try{ canvas.releasePointerCapture(e.pointerId); }catch(_){} } };
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('wheel', e=>{     // 滚轮=前后走，而不是拉远拉近
+    if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+    e.preventDefault();
+    three.cam.position.addScaledVector(fpForward(), (e.deltaY>0?-1:1)*0.55);
+    three.cam.position.y=EYE_H;
+    fpAim();
+  }, {passive:false});
+})();
 /* 漫游走动 */
 const fpKeys={};
 window.addEventListener('keydown', e=>{
@@ -3586,10 +3665,8 @@ function fpStep(){
   if(!three || three.camMode!=='fp') return;
   const any=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>fpKeys[k]);
   if(!any) return;
-  const {cam, controls}=three;
-  const fwd=controls.target.clone().sub(cam.position); fwd.y=0;
-  if(fwd.lengthSq()<1e-6) return;
-  fwd.normalize();
+  const {cam}=three;
+  const fwd=fpForward();
   const right=new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
   const sp=(fpKeys['shift']?0.34:0.14);
   const mv=new THREE.Vector3();
@@ -3597,9 +3674,8 @@ function fpStep(){
   if(fpKeys['s']||fpKeys['arrowdown'])  mv.addScaledVector(fwd,-sp);
   if(fpKeys['a']||fpKeys['arrowleft'])  mv.addScaledVector(right,-sp);
   if(fpKeys['d']||fpKeys['arrowright']) mv.addScaledVector(right, sp);
-  cam.position.add(mv); controls.target.add(mv);
-  cam.position.y=EYE_H; controls.target.y=Math.min(controls.target.y, EYE_H+2.2);
-  controls.update();
+  cam.position.add(mv); cam.position.y=EYE_H;
+  fpAim();
 }
 $('#dnDay').onclick=()=>{ $('#dnDay').blur(); setDayNight(false); };
 $('#dnNight').onclick=()=>{ $('#dnNight').blur(); setDayNight(true); };
