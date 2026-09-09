@@ -39,6 +39,11 @@
   #btnWallEdit.on{background:#26e0a8; color:#0b0d10;}
   #btnUnderlay.on{background:#3d8bfd; color:#fff;}
   #btnPhoto{background:#6b4bd6; color:#fff;}
+  #loading3d{position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
+    gap:14px; background:rgba(16,18,21,.92); color:#cfd4dc; font-size:14px; letter-spacing:.5px;}
+  #loading3d .spin{width:26px; height:26px; border:3px solid #333a45; border-top-color:#4c8dff;
+    border-radius:50%; animation:spin3d .8s linear infinite;}
+  @keyframes spin3d{to{transform:rotate(360deg)}}
   #photoBar{display:flex; align-items:center; gap:12px; padding:7px 16px; background:#241c3d; border-bottom:1px solid #3a2f5e; color:#cfc6f0; font-size:13px;}
   #photoModal{position:fixed; inset:0; background:rgba(8,9,12,.93); z-index:50; align-items:center; justify-content:center;}
   #photoOut{text-align:center; padding:20px;}
@@ -217,6 +222,9 @@
     <img id="refPhoto" src="work/709_rot.jpg" alt="原户型图" onerror="this.style.opacity=.3" >
     <div id="hint">拖动=移动 · 圆点手柄/R键=旋转（按住Shift自由角度）· D=复制 · Delete=删除 · 滚轮=缩放 · 拖空白=平移<br>红色描边 = 与其他家具重叠</div>
     <div id="totals"></div>
+    <div id="loading3d" style="display:none">
+      <div class="spin"></div><span id="loadTxt">正在生成 3D 场景…</span>
+    </div>
   </div>
   <div id="props">
     <h3 id="pTitle">未选中家具</h3>
@@ -464,11 +472,15 @@ const DIMTXT = [];
 /* ---------- 家具目录（IKEA美国官网核实：2026-09；尺寸cm，价格USD） ---------- */
 const CATALOG = [
  // ===== 2026-09 新增：按官网实测尺寸/价格/全部配色 =====
- {id:'ps2026-tbl-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 折叠桌 · 松木/透明漆', w:156,d:75,h:73, price:299, color:'#DDB584', color2:'#C4262E', model:'ps2026-tbl', kind:'tableFold', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-folding-pine-clear-lacquered-00617861/', note:'设计师 Ola Wihlborg，实木交叉腿（cross-leg）折叠餐桌，坐 4 人'},
- {id:'ps2026-tbl-drw-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 带抽屉桌 · 松木 清漆', w:70,d:70,h:75, price:249, color:'#D6AE7B', color2:'#1C63B8', model:'ps2026-tbl-drw', kind:'tableDrawer', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-with-drawer-pine-clear-lacquered-40617878/', note:'IKEA PS 2026 系列双人方桌（设计师 Ola Wihlborg，货号 406.178.78）'},
+ {id:'wk-mat-s-0', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 S 200×120 · 沙色', w:200,d:120,h:4, price:269, color:'#D4C4A8', color2:'#BCAA8C', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder', note:'硅胶涂层素皮面 + 9 层高密度 PE 泡棉，厚 4cm，可折叠双面用'},
+ {id:'wk-mat-s-1', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 S 200×120 · 石灰色', w:200,d:120,h:4, price:269, color:'#9E9E9E', color2:'#868686', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
+ {id:'wk-mat-l-0', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 L 240×140 · 沙色', w:240,d:140,h:4, price:299, color:'#D4C4A8', color2:'#BCAA8C', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
+ {id:'wk-mat-l-1', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 L 240×140 · 石灰色', w:240,d:140,h:4, price:299, color:'#9E9E9E', color2:'#868686', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
+ {id:'ps2026-tbl-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 折叠桌 · 松木/透明漆', w:156,d:75,h:73, price:299, color:'#DDB584', color2:'#C4262E', model:'ps2026-tbl', wood:'pine', kind:'tableFold', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-folding-pine-clear-lacquered-00617861/', note:'设计师 Ola Wihlborg，实木交叉腿（cross-leg）折叠餐桌，坐 4 人'},
+ {id:'ps2026-tbl-drw-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 带抽屉桌 · 松木 清漆', w:70,d:70,h:75, price:249, color:'#D6AE7B', color2:'#1C63B8', model:'ps2026-tbl-drw', wood:'pine', kind:'tableDrawer', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-with-drawer-pine-clear-lacquered-40617878/', note:'IKEA PS 2026 系列双人方桌（设计师 Ola Wihlborg，货号 406.178.78）'},
  {id:'vihals-chair-0', cat:'餐桌椅 / 吧凳', name:'VIHALS 餐椅 · 绿色 / Tibbleby 灰绿色', w:49,d:55,h:81, price:55, color:'#929683', color2:'#78846C', seatH:48, model:'vihals-chair', kind:'chair', url:'https://www.ikea.com/ca/en/p/vihals-chair-green-tibbleby-gray-green-90595124/', note:'【颜色字段约定】hex = 钢管框架/椅腿的粉末喷涂色（IKEA 型号名里的第一个颜色），hex2 = 座面与靠背软包织'},
  {id:'vihals-chair-1', cat:'餐桌椅 / 吧凳', name:'VIHALS 餐椅 · 白色 / Tibbleby 米灰色', w:49,d:55,h:81, price:55, color:'#F2F1EC', color2:'#B6B4AC', seatH:48, model:'vihals-chair', kind:'chair', url:'https://www.ikea.com/ca/en/p/vihals-chair-green-tibbleby-gray-green-90595124/'},
- {id:'ps2026-side-0', cat:'地毯 / 茶几 / 灯', name:'PS 2026 折叠边桌 · 深红', w:50,d:40,h:51, price:59.99, color:'#7A2A35', color2:'#68232E', model:'ps2026-side', kind:'sideTable', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-side-table-dark-red-80621067/', note:'设计师 David Wahl，2026 年 IKEA PS 系列'},
+ {id:'ps2026-side-0', cat:'茶几 / 边几', name:'PS 2026 折叠边桌 · 深红', w:50,d:40,h:51, price:59.99, color:'#7A2A35', color2:'#68232E', model:'ps2026-side', wood:'pine', kind:'sideTable', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-side-table-dark-red-80621067/', note:'设计师 David Wahl，2026 年 IKEA PS 系列'},
  {id:'figgy-0', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 月光灰 Moonbeam', w:168,d:84,h:51, price:795, color:'#C6C5C3', seatH:23, model:'figgy', kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy', note:'儿童模块化泡棉游戏沙发，无任何硬质框架/支腿——整体直接坐落地面，是一堆布面包裹的泡棉块（FiggyFoam，Certi'},
  {id:'figgy-1', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 海洋藏蓝 Ocean', w:168,d:84,h:51, price:795, color:'#38507B', seatH:23, model:'figgy', kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
  {id:'figgy-2', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 炉甘石粉 Calamine', w:168,d:84,h:51, price:795, color:'#C8A796', seatH:23, model:'figgy', kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
@@ -500,7 +512,7 @@ const CATALOG = [
  {id:'orfjall-2', cat:'书桌 / 办公椅', name:'ÖRFJÄLL 转椅 · 黑色/Vissle 红', w:68,d:68,h:93, price:99, color:'#B03A31', color2:'#2B2B2B', seatH:47, model:'orfjall', kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/oerfjaell-swivel-chair-white-vissle-dark-blue-s49590983/'},
  {id:'idasen-desk-0', cat:'书桌 / 办公椅', name:'IDÅSEN 电动升降桌 · 黑色/深灰', w:160,d:80,h:127, price:799, color:'#2A2A2C', color2:'#4C4F52', model:'idasen-desk', kind:'deskSitStand', url:'https://www.ikea.com/ca/en/p/idasen-desk-sit-stand-black-dark-gray-s79280998/', note:'IKEA 加拿大站 IDÅSEN 电动升降办公桌，商品号 792.809.98，售价 CAD $799'},
  {id:'idasen-desk-1', cat:'书桌 / 办公椅', name:'IDÅSEN 电动升降桌 · 棕色/深灰', w:160,d:80,h:127, price:799, color:'#6E4B33', color2:'#4C4F52', model:'idasen-desk', kind:'deskSitStand', url:'https://www.ikea.com/ca/en/p/idasen-desk-sit-stand-black-dark-gray-s79280998/'},
- {id:'sniglar-crib-0', cat:'床 / 床头柜', name:'SNIGLAR 婴儿床 · 山毛榉原木色', w:137,d:74,h:84, price:159, color:'#DCBB90', color2:'#C9A06E', model:'sniglar-crib', kind:'crib', url:'https://www.ikea.com/ca/en/p/sniglar-crib-beech-50248541/', note:'极简未上漆实木婴儿床（型号 502.485.41）'},
+ {id:'sniglar-crib-0', cat:'床 / 床头柜', name:'SNIGLAR 婴儿床 · 山毛榉原木色', w:137,d:74,h:84, price:159, color:'#DCBB90', color2:'#C9A06E', model:'sniglar-crib', wood:'beech', kind:'crib', url:'https://www.ikea.com/ca/en/p/sniglar-crib-beech-50248541/', note:'极简未上漆实木婴儿床（型号 502.485.41）'},
  {id:'kallax-a-0', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 白色', w:111.5,d:39,h:146.5, price:149, color:'#F3F3F1', model:'kallax-a', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/', note:'经典 KALLAX 方格柜，竖放时为 3 列 x 4 行 = 12 个方格（也可横放当边柜，此时 4 列 x 3 行）'},
  {id:'kallax-a-1', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 黑棕色', w:111.5,d:39,h:146.5, price:149, color:'#2C2422', model:'kallax-a', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
  {id:'kallax-a-2', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 白色仿橡木纹', w:111.5,d:39,h:146.5, price:149, color:'#DFD5C6', color2:'#C9BCA6', model:'kallax-a', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
@@ -581,19 +593,19 @@ const CATALOG = [
  {id:'flintan', cat:'书桌 / 办公椅', name:'FLINTAN 办公椅', w:71,d:71,h:114, price:119.99, color:'#3e4249', kind:'officeChair', url:'https://www.ikea.com/us/en/p/flintan-office-chair-with-armrests-black-s29424471/'},
  {id:'alex_dr', cat:'书桌 / 办公椅', name:'ALEX 抽屉柜', w:36,d:58,h:70, price:79.99, color:'#e8e4dc', kind:'dresser', url:'https://www.ikea.com/us/en/p/alex-drawer-unit-white-00473546/'},
  // —— 地毯 / 茶几 / 灯 ——
- {id:'stoense23', cat:'地毯 / 茶几 / 灯', name:'STOENSE 地毯 200×300', w:300,d:200,h:2, price:159.99, color:'#b9b3a6', kind:'rug', url:'https://www.ikea.com/us/en/p/stoense-rug-low-pile-medium-gray-30426836/'},
- {id:'stoense17', cat:'地毯 / 茶几 / 灯', name:'STOENSE 地毯 170×240', w:240,d:170,h:2, price:149.99, color:'#b9b3a6', kind:'rug', url:'https://www.ikea.com/us/en/p/stoense-rug-low-pile-medium-gray-00426828/'},
- {id:'morum', cat:'地毯 / 茶几 / 灯', name:'MORUM 平织地毯 160×230', w:230,d:160,h:1, price:99.99, color:'#8a8478', kind:'rug', url:'https://www.ikea.com/us/en/p/morum-rug-flatwoven-in-outdoor-dark-gray-40203557/'},
- {id:'tiphede', cat:'地毯 / 茶几 / 灯', name:'TIPHEDE 棉毯 155×220', w:220,d:155,h:1, price:29.99, color:'#cfc9bc', kind:'rug', url:'https://www.ikea.com/us/en/p/tiphede-rug-flatwoven-black-natural-20470047/'},
- {id:'listerby_ct', cat:'地毯 / 茶几 / 灯', name:'LISTERBY 茶几 140×60', w:140,d:60,h:37, price:399.99, color:'#5c4530', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/listerby-coffee-table-dark-brown-beech-veneer-90562246/'},
- {id:'lack_ct', cat:'地毯 / 茶几 / 灯', name:'LACK 茶几 118×78', w:118,d:78,h:45, price:49.99, color:'#2e3138', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/lack-coffee-table-white-80449901/'},
- {id:'borgeby', cat:'地毯 / 茶几 / 灯', name:'BORGEBY 圆茶几 Ø70', w:70,d:70,h:42, price:199.99, color:'#c9a877', kind:'sideTable', url:'https://www.ikea.com/us/en/p/borgeby-coffee-table-birch-veneer-70389356/'},
- {id:'vittsjo_nest', cat:'地毯 / 茶几 / 灯', name:'VITTSJÖ 套几 90×50', w:90,d:50,h:50, price:149.99, color:'#3a3d43', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/vittsjoe-nesting-tables-set-of-2-black-brown-glass-80215332/'},
- {id:'lack_side', cat:'地毯 / 茶几 / 灯', name:'LACK 边桌 55×55', w:55,d:55,h:45, price:16.99, color:'#e8e4dc', kind:'sideTable', url:'https://www.ikea.com/us/en/p/lack-side-table-white-30449908/'},
- {id:'gladom', cat:'地毯 / 茶几 / 灯', name:'GLADOM 托盘桌 Ø45', w:45,d:45,h:53, price:19.99, color:'#3e4249', kind:'sideTable', url:'https://www.ikea.com/us/en/p/gladom-tray-table-black-50411990/'},
- {id:'vidja', cat:'地毯 / 茶几 / 灯', name:'VIDJA 落地灯', w:26,d:26,h:138, price:69.99, color:'#e8e4dc', kind:'lamp', url:'https://www.ikea.com/us/en/p/vidja-floor-lamp-white-10309206/'},
- {id:'ranarp_f', cat:'地毯 / 茶几 / 灯', name:'RANARP 落地阅读灯', w:28,d:28,h:153, price:69.99, color:'#2e3138', kind:'lamp', url:'https://www.ikea.com/us/en/p/ranarp-floor-reading-lamp-black-00331383/'},
- {id:'hektar_f', cat:'地毯 / 茶几 / 灯', name:'HEKTAR 落地灯', w:33,d:33,h:180, price:89.99, color:'#4a4d53', kind:'lamp', url:'https://www.ikea.com/us/en/p/hektar-floor-lamp-dark-gray-70216544/'},
+ {id:'stoense23', cat:'地毯 / 爬行垫', name:'STOENSE 地毯 200×300', w:300,d:200,h:2, price:159.99, color:'#b9b3a6', kind:'rug', url:'https://www.ikea.com/us/en/p/stoense-rug-low-pile-medium-gray-30426836/'},
+ {id:'stoense17', cat:'地毯 / 爬行垫', name:'STOENSE 地毯 170×240', w:240,d:170,h:2, price:149.99, color:'#b9b3a6', kind:'rug', url:'https://www.ikea.com/us/en/p/stoense-rug-low-pile-medium-gray-00426828/'},
+ {id:'morum', cat:'地毯 / 爬行垫', name:'MORUM 平织地毯 160×230', w:230,d:160,h:1, price:99.99, color:'#8a8478', kind:'rug', url:'https://www.ikea.com/us/en/p/morum-rug-flatwoven-in-outdoor-dark-gray-40203557/'},
+ {id:'tiphede', cat:'地毯 / 爬行垫', name:'TIPHEDE 棉毯 155×220', w:220,d:155,h:1, price:29.99, color:'#cfc9bc', kind:'rug', url:'https://www.ikea.com/us/en/p/tiphede-rug-flatwoven-black-natural-20470047/'},
+ {id:'listerby_ct', cat:'茶几 / 边几', name:'LISTERBY 茶几 140×60', w:140,d:60,h:37, price:399.99, color:'#5c4530', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/listerby-coffee-table-dark-brown-beech-veneer-90562246/'},
+ {id:'lack_ct', cat:'茶几 / 边几', name:'LACK 茶几 118×78', w:118,d:78,h:45, price:49.99, color:'#2e3138', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/lack-coffee-table-white-80449901/'},
+ {id:'borgeby', cat:'茶几 / 边几', name:'BORGEBY 圆茶几 Ø70', w:70,d:70,h:42, price:199.99, color:'#c9a877', kind:'sideTable', url:'https://www.ikea.com/us/en/p/borgeby-coffee-table-birch-veneer-70389356/'},
+ {id:'vittsjo_nest', cat:'茶几 / 边几', name:'VITTSJÖ 套几 90×50', w:90,d:50,h:50, price:149.99, color:'#3a3d43', kind:'coffeeTable', url:'https://www.ikea.com/us/en/p/vittsjoe-nesting-tables-set-of-2-black-brown-glass-80215332/'},
+ {id:'lack_side', cat:'茶几 / 边几', name:'LACK 边桌 55×55', w:55,d:55,h:45, price:16.99, color:'#e8e4dc', kind:'sideTable', url:'https://www.ikea.com/us/en/p/lack-side-table-white-30449908/'},
+ {id:'gladom', cat:'茶几 / 边几', name:'GLADOM 托盘桌 Ø45', w:45,d:45,h:53, price:19.99, color:'#3e4249', kind:'sideTable', url:'https://www.ikea.com/us/en/p/gladom-tray-table-black-50411990/'},
+ {id:'vidja', cat:'灯具 / 照明', name:'VIDJA 落地灯', w:26,d:26,h:138, price:69.99, color:'#e8e4dc', kind:'lamp', url:'https://www.ikea.com/us/en/p/vidja-floor-lamp-white-10309206/'},
+ {id:'ranarp_f', cat:'灯具 / 照明', name:'RANARP 落地阅读灯', w:28,d:28,h:153, price:69.99, color:'#2e3138', kind:'lamp', url:'https://www.ikea.com/us/en/p/ranarp-floor-reading-lamp-black-00331383/'},
+ {id:'hektar_f', cat:'茶几 / 边几', name:'HEKTAR 落地灯', w:33,d:33,h:180, price:89.99, color:'#4a4d53', kind:'lamp', url:'https://www.ikea.com/us/en/p/hektar-floor-lamp-dark-gray-70216544/'},
 ];
 
 /* ---------- 预设布局 ---------- */
@@ -1173,6 +1185,11 @@ function furnShape(it, spec){
     lb.textContent=itemCCT(it)+'K';
     return g;
   }
+  if(kind==='playMat'){
+    R(-wf/2,-df/2,wf,df,5,col,{stroke:'rgba(0,0,0,.35)','stroke-width':1.2});
+    R(-wf/2+.12,-df/2+.12,wf-.24,df-.24,4,'rgba(255,255,255,.10)');
+    el('line',{x1:0,y1:-dp/2+3,x2:0,y2:dp/2-3,stroke:'rgba(0,0,0,.28)','stroke-width':1.4,'stroke-dasharray':'6 4'},body);
+  } else
   // 新品类 2D 俯视图例
   if(['shelf','crib','cart','deskSitStand','swivelChair','playCouch','tableFold','tableDrawer'].includes(kind)){
     const dk2='rgba(0,0,0,.30)', lt2='rgba(255,255,255,.22)';
@@ -2044,6 +2061,60 @@ function normalFromTexture(tex, strength){
   t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.copy(tex.repeat);
   _nrmCache.set(tex,t); return t;
 }
+const _speciesCache={};
+/* 木材树种贴图：松木(蜜黄+节疤)/榉木(浅粉白)/白蜡(暖白)/胡桃(深棕)
+   —— 与 color 相乘，所以贴图本身以高亮度基调 + 木纹明暗为主 */
+function woodSpecies(name){
+  if(_speciesCache[name]) return _speciesCache[name];
+  const P={
+    pine:  {base:'#f0dcb8', grain:'rgba(150,110,62,%A)', light:'rgba(255,246,226,%A)', knots:5, gw:[0.6,2.6], n:52, rep:[1.4,1.4]},
+    beech: {base:'#f4e5d2', grain:'rgba(168,132,96,%A)', light:'rgba(255,250,242,%A)', knots:1, gw:[0.4,1.4], n:70, rep:[1.6,1.6]},
+    birch: {base:'#f6ecdc', grain:'rgba(178,150,116,%A)', light:'rgba(255,252,246,%A)', knots:1, gw:[0.4,1.2], n:64, rep:[1.6,1.6]},
+    oak:   {base:'#e8d9bf', grain:'rgba(126,96,58,%A)',  light:'rgba(252,244,228,%A)', knots:2, gw:[0.7,3.0], n:48, rep:[1.2,1.2]},
+    walnut:{base:'#c8a276', grain:'rgba(78,50,28,%A)',   light:'rgba(226,196,158,%A)', knots:2, gw:[0.6,2.4], n:56, rep:[1.3,1.3]},
+  }[name] || {base:'#f0e2cc', grain:'rgba(150,118,80,%A)', light:'rgba(255,250,240,%A)', knots:2, gw:[0.5,2], n:56, rep:[1.5,1.5]};
+  const N=512, c=document.createElement('canvas'); c.width=N;c.height=N;
+  const g=c.getContext('2d');
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  g.fillStyle=P.base; g.fillRect(0,0,N,N);
+  // 心材/边材色带
+  for(let i=0;i<8;i++){
+    const y=rnd(0,N), h=rnd(12,70);
+    g.fillStyle=P.grain.replace('%A', (0.03+Math.random()*0.05).toFixed(3));
+    g.fillRect(0,y,N,h);
+  }
+  // 顺纹长纹理（松木是笔直平行纹）
+  for(let i=0;i<P.n;i++){
+    const y=rnd(0,N), a=(0.05+Math.random()*0.22).toFixed(3);
+    g.strokeStyle=(Math.random()<0.62? P.grain : P.light).replace('%A',a);
+    g.lineWidth=rnd(P.gw[0],P.gw[1]);
+    g.beginPath(); g.moveTo(-20,y);
+    g.bezierCurveTo(N*0.3, y+rnd(-3,3), N*0.7, y+rnd(-3,3), N+20, y+rnd(-2,2));
+    g.stroke();
+  }
+  // 节疤（松木标志性）
+  for(let k=0;k<P.knots;k++){
+    const kx=rnd(50,N-50), ky=rnd(40,N-40), R=rnd(7,17), el=rnd(1.4,2.4);
+    for(let r=R;r>0;r-=1.1){
+      g.strokeStyle=P.grain.replace('%A',(0.10+ (R-r)/R*0.30).toFixed(3));
+      g.lineWidth=1.0;
+      g.beginPath(); g.ellipse(kx,ky,r*el,r,rnd(-0.4,0.4),0,Math.PI*2); g.stroke();
+    }
+    g.fillStyle=P.grain.replace('%A','0.55');
+    g.beginPath(); g.ellipse(kx,ky,R*0.28*el,R*0.28,0,0,Math.PI*2); g.fill();
+    // 纹理绕过节疤的分流
+    for(let i=0;i<7;i++){
+      const yy=ky+rnd(-R*2.6,R*2.6);
+      g.strokeStyle=P.grain.replace('%A',(0.06+Math.random()*0.12).toFixed(3));
+      g.lineWidth=rnd(0.5,1.6);
+      g.beginPath(); g.moveTo(kx-R*3.6, yy);
+      g.quadraticCurveTo(kx, ky+(yy-ky)*2.1, kx+R*3.6, yy); g.stroke();
+    }
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(P.rep[0],P.rep[1]); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _speciesCache[name]=t; return t;
+}
 let _steelTex=null;
 /* 拉丝不锈钢的粗糙度贴图：竖向细密拉丝 → 沿纹理方向拉长高光 */
 function brushedSteelTexture(){
@@ -2529,55 +2600,114 @@ function buildStatic3D(){
       }
     }
   }
-  // 门扇 3D：北美常见白色平板内门；入户门深木色
-  const matDoorW = new THREE.MeshPhysicalMaterial({color:0xe6e3dd, roughness:.72,
-    specularIntensity:.28, envMapIntensity:.22});   // 白色门：半哑光
-  const matDoorWood = new THREE.MeshStandardMaterial({color:0x5d3d24, roughness:.45});
-  const matHandle = new THREE.MeshStandardMaterial({color:0xb9bcc2, roughness:.3, metalness:.7});
+  // 门扇 3D：北美常见白色平板门（含杆式把手/合页/门套线）；入户门深木色
+  const doorPaint = (()=>{                       // 白漆门：细腻漆面质感（非纯平）
+    const N=256,c=document.createElement('canvas'); c.width=N;c.height=N;
+    const g=c.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,N,N);
+    for(let i=0;i<5200;i++){ const v=Math.random()<0.5?236:255;
+      g.fillStyle=`rgba(${v},${v},${v},.5)`; g.fillRect(Math.random()*N,Math.random()*N,1,1); }
+    for(let i=0;i<26;i++){ g.strokeStyle=`rgba(214,210,204,${0.05+Math.random()*0.06})`;
+      g.lineWidth=0.6+Math.random(); const y=Math.random()*N;
+      g.beginPath(); g.moveTo(0,y); g.bezierCurveTo(N*.3,y+2,N*.7,y-2,N,y); g.stroke(); }
+    const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+    t.repeat.set(1.6,3.2); t.encoding=THREE.sRGBEncoding; return t;
+  })();
+  const matDoorW = new THREE.MeshPhysicalMaterial({map:doorPaint, normalMap:normalFromTexture(doorPaint,0.35),
+    color:0xe8e5e0, roughness:.62, clearcoat:.22, clearcoatRoughness:.42, specularIntensity:.35, envMapIntensity:.22});
+  const woodDoorTex = woodSpecies('walnut');
+  const matDoorWood = new THREE.MeshPhysicalMaterial({map:woodDoorTex, normalMap:normalFromTexture(woodDoorTex,0.8),
+    color:0x7a4f2e, roughness:.40, clearcoat:.45, clearcoatRoughness:.20, envMapIntensity:.6});
+  const matHandle = new THREE.MeshStandardMaterial({color:0xb9bcc2, roughness:.22, metalness:.92, envMapIntensity:.9});
+  const matCasing = new THREE.MeshPhysicalMaterial({color:0xecebe7, roughness:.68, specularIntensity:.30, envMapIntensity:.2});
   const DOOR_H = 6.7;
+  /* 杆式把手（锁芯圆盘 + L 形把手），装在门扇两面 */
+  const addLever=(px,pz,u,n,side,y)=>{
+    const rose=new THREE.Mesh(new THREE.CylinderGeometry(0.19,0.19,0.05,20), matHandle);
+    rose.position.set(px+n[0]*side*0.075, y, pz+n[1]*side*0.075);
+    rose.rotation.z=Math.PI/2; rose.rotation.y=-Math.atan2(n[1],n[0]);
+    rose.castShadow=true; scene.add(rose);
+    const stem=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.16,12), matHandle);
+    stem.position.set(px+n[0]*side*0.14, y, pz+n[1]*side*0.14);
+    stem.rotation.z=Math.PI/2; stem.rotation.y=-Math.atan2(n[1],n[0]);
+    scene.add(stem);
+    const lev=new THREE.Mesh(new THREE.CapsuleGeometry(0.052,0.34,4,10), matHandle);   // 横向把杆
+    lev.position.set(px+n[0]*side*0.20 - u[0]*0.17, y, pz+n[1]*side*0.20 - u[1]*0.17);
+    lev.rotation.z=Math.PI/2; lev.rotation.y=-Math.atan2(u[1],u[0]);
+    lev.castShadow=true; scene.add(lev);
+  };
   for(const d of effDoors()){
-    const g=doorGeom(d), mat=d.wood?matDoorWood:matDoorW;
-    const mkPanel=(cx,cy,len,thick,rotAxisDir)=>{
-      const m=new THREE.Mesh(new THREE.BoxGeometry(len,DOOR_H,thick),mat);
-      m.position.set(cx,DOOR_H/2,cy);
-      m.rotation.y=-Math.atan2(rotAxisDir[1],rotAxisDir[0]);
-      m.castShadow=m.receiveShadow=true; scene.add(m); return m;
+    const g=doorGeom(d), wood=d.wood, mat=wood?matDoorWood:matDoorW;
+    const TH=0.14;
+    const mkPanel=(cx,cy,len,thick,dir)=>{                    // 门扇：圆角板 + 四周细收边
+      const ang=-Math.atan2(dir[1],dir[0]);
+      const m=new THREE.Mesh(rboxGeo(len, DOOR_H, thick, 0.012, 2), mat);
+      m.position.set(cx, DOOR_H/2, cy); m.rotation.y=ang;
+      m.castShadow=m.receiveShadow=true; scene.add(m);
+      const edge=new THREE.Mesh(new THREE.BoxGeometry(len*0.995, 0.02, thick*1.04),
+        new THREE.MeshStandardMaterial({color:wood?0x5f3d23:0xd9d6d0, roughness:.7}));
+      edge.position.set(cx, DOOR_H-0.012, cy); edge.rotation.y=ang; scene.add(edge);
+      return m;
     };
+    /* 门套线：洞口两侧各一圈平板套线（照片里就是这种极简平线脚） */
+    {
+      const cw=0.30, ct=0.055, jamb=0.40;
+      for(const side of [-1,1]){
+        const off=[g.n[0]*side*(jamb/2+ct/2), g.n[1]*side*(jamb/2+ct/2)];
+        for(const [ex,ey] of [[d.x1,d.y1],[d.x2,d.y2]]){       // 竖套线
+          const c1=new THREE.Mesh(new THREE.BoxGeometry(cw, DOOR_H+0.30, ct), matCasing);
+          c1.position.set(ex+off[0]+g.u[0]*0, (DOOR_H+0.30)/2, ey+off[1]);
+          c1.rotation.y=-Math.atan2(g.n[1]*side, g.n[0]*side)+Math.PI/2;
+          c1.castShadow=c1.receiveShadow=true; scene.add(c1);
+        }
+        const top=new THREE.Mesh(new THREE.BoxGeometry(g.L+cw*1.2, cw, ct), matCasing);
+        const mx=(d.x1+d.x2)/2+off[0], mz=(d.y1+d.y2)/2+off[1];
+        top.position.set(mx, DOOR_H+0.30-cw/2, mz);
+        top.rotation.y=-Math.atan2(g.u[1],g.u[0]);
+        top.castShadow=true; scene.add(top);
+      }
+    }
     if(d.kind==='slide'){
       const a=[d.x1,d.y1];
       const mid=(t0,t1)=>[(a[0]+g.u[0]*g.L*(t0+t1)/2), (a[1]+g.u[1]*g.L*(t0+t1)/2)];
-      let c=mid(0,0.55);  mkPanel(c[0]+g.n[0]*0.09, c[1]+g.n[1]*0.09, g.L*0.55, 0.1, g.u);
-      c=mid(0.45,1);      mkPanel(c[0]-g.n[0]*0.09, c[1]-g.n[1]*0.09, g.L*0.55, 0.1, g.u);
-    } else if(d.kind==='bifold'){
-      const a=[d.x1,d.y1], q=g.L/4, fold=0.10; // 四块板，接缝处微微外折
-      for(let i=0;i<4;i++){
-        const t0=i/4, t1=(i+1)/4;
-        const c=[a[0]+g.u[0]*g.L*(t0+t1)/2, a[1]+g.u[1]*g.L*(t0+t1)/2];
-        const off=(i===1||i===2)?fold:fold*0.35;
-        mkPanel(c[0]+g.n[0]*off, c[1]+g.n[1]*off, q*0.98, 0.1, g.u);
+      let c=mid(0,0.55);  const p1=mkPanel(c[0]+g.n[0]*0.09, c[1]+g.n[1]*0.09, g.L*0.55, 0.10, g.u);
+      c=mid(0.45,1);      mkPanel(c[0]-g.n[0]*0.09, c[1]-g.n[1]*0.09, g.L*0.55, 0.10, g.u);
+      const rail=new THREE.Mesh(new THREE.BoxGeometry(g.L+0.1, 0.10, 0.30), matHandle);  // 上轨
+      rail.position.set((d.x1+d.x2)/2, DOOR_H+0.10, (d.y1+d.y2)/2);
+      rail.rotation.y=-Math.atan2(g.u[1],g.u[0]); scene.add(rail);
+      for(const t of [0.30, 0.74]){                                                       // 竖向嵌入把手
+        const px=d.x1+g.u[0]*g.L*t, pz=d.y1+g.u[1]*g.L*t;
+        const h=new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.9, 0.09), matHandle);
+        h.position.set(px+g.n[0]*0.14, 3.3, pz+g.n[1]*0.14);
+        h.rotation.y=-Math.atan2(g.u[1],g.u[0]); scene.add(h);
       }
     } else if(d.kind==='bifold'){
       for(const sg of bifoldZig(d)){
         const c=[(sg[0][0]+sg[1][0])/2,(sg[0][1]+sg[1][1])/2];
         const dv=[sg[1][0]-sg[0][0], sg[1][1]-sg[0][1]];
-        mkPanel(c[0],c[1],Math.hypot(dv[0],dv[1])*0.98,0.09,dv);
+        const L=Math.hypot(dv[0],dv[1]);
+        mkPanel(c[0],c[1],L*0.97,0.085,dv);
+        const nn=[dv[1]/L, -dv[0]/L];
+        const kb=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,0.10,12), matHandle);
+        kb.position.set(c[0]+nn[0]*0.07, 3.3, c[1]+nn[1]*0.07);
+        kb.rotation.z=Math.PI/2; kb.rotation.y=-Math.atan2(nn[1],nn[0]); scene.add(kb);
       }
     } else {
-      // 平开/双开：半开 45°，绕铰链旋转
       const c45=Math.cos(Math.PI/4), s45=Math.sin(Math.PI/4);
-      const leaf=(H,w,Lp)=>{ // w: 铰链→锁舌单位向量
+      const leaf=(H,w,Lp)=>{
         const dir=[w[0]*c45+g.n[0]*s45, w[1]*c45+g.n[1]*s45];
         const c=[H[0]+dir[0]*Lp/2, H[1]+dir[1]*Lp/2];
-        mkPanel(c[0],c[1],Lp,0.13,dir);
+        mkPanel(c[0],c[1],Lp,TH,dir);
         const pn=[dir[1],-dir[0]];
-        const p=[H[0]+dir[0]*Lp*0.85, H[1]+dir[1]*Lp*0.85];
-        const k=new THREE.Mesh(new THREE.CylinderGeometry(0.045,0.045,0.25,10),matHandle);
-        k.rotation.z=Math.PI/2; k.rotation.y=-Math.atan2(dir[1],dir[0]);
-        k.position.set(p[0]+pn[0]*0.1, 3.1, p[1]+pn[1]*0.1);
-        scene.add(k);
+        const hx=H[0]+dir[0]*Lp*0.86, hz=H[1]+dir[1]*Lp*0.86;
+        addLever(hx,hz,dir,pn, 1, 3.0);          // 两面都有把手
+        addLever(hx,hz,dir,pn,-1, 3.0);
+        for(const hy of [0.9, DOOR_H*0.5, DOOR_H-0.9]){                       // 合页
+          const hg=new THREE.Mesh(new THREE.CylinderGeometry(0.055,0.055,0.34,10), matHandle);
+          hg.position.set(H[0]-dir[0]*0.02+pn[0]*0.05, hy, H[1]-dir[1]*0.02+pn[1]*0.05);
+          hg.castShadow=true; scene.add(hg);
+        }
       };
       if(d.kind==='double'){
-        const m=[(d.x1+d.x2)/2,(d.y1+d.y2)/2];
         leaf([d.x1,d.y1], g.u, g.L/2-0.04);
         leaf([d.x2,d.y2], [-g.u[0],-g.u[1]], g.L/2-0.04);
       } else {
@@ -2836,6 +2966,19 @@ function rboxGeo(w,h,d,r,seg){
    坐标：原点在家具中心地面，y 向上，+z = 正面（朝房间），-z = 背面（靠墙）
    ===================================================================== */
 const MODELS = {};
+/* Wunderkids 折叠爬行垫：4cm 厚软垫，中央折线，素皮面半亚光 */
+MODELS['wk-mat'] = (C) => {
+  const skin = C.M(C.col, {rough:.55, clear:.30, clearRough:.45});
+  const edge = C.M(C.col2 || C.col, {rough:.62});
+  const t=C.h, hw=C.w/2, hd=C.d/2, gap=C.cm(0.5);
+  for(const sx of [-1,1]){
+    const w2=hw-gap/2;
+    C.rb(w2, t, C.d, C.cm(1.6), skin, sx*(w2/2+gap/2), 0, 0, 3);
+    C.box(w2*0.96, C.cm(0.35), C.d*0.97, edge, sx*(w2/2+gap/2), t-C.cm(0.35), 0);
+  }
+  C.box(C.cm(1.2), t*0.96, C.d, edge, 0, 0, 0);
+  for(const sz of [-1,1]) C.box(C.w, C.cm(0.5), C.cm(0.8), edge, 0, C.cm(0.3), sz*(hd-C.cm(0.4)));
+};
 function modelCtx(g, spec, col, col2, matlib){
   const cm = cm2ft;
   const add=(mm,x,y,z,bottomAligned,h)=>{ mm.position.set(x||0,(bottomAligned?(y||0)+h/2:(y||0)),z||0);
@@ -2849,8 +2992,9 @@ function modelCtx(g, spec, col, col2, matlib){
     M(color, o){ o=o||{};
       const p = {color:new THREE.Color(color), roughness:(o.rough==null?.7:o.rough), metalness:o.metal||0};
       if(o.fabric){ p.map=fabricTexture(); p.roughness=(o.rough==null?.95:o.rough); p.envMapIntensity=.25; }
-      if(o.wood){ p.map=furnWoodTexture(); p.normalMap=normalFromTexture(furnWoodTexture(),0.9);
-        p.roughness=(o.rough==null?.46:o.rough); if(o.clear==null) o.clear=.3; }
+      if(o.wood){ const tx=woodSpecies(typeof o.wood==='string'?o.wood:(spec.wood||'oak'));
+        p.map=tx; p.normalMap=normalFromTexture(tx,0.85);
+        p.roughness=(o.rough==null?.42:o.rough); if(o.clear==null) o.clear=.38; }
       if(o.clear!=null || o.sheen!=null){
         const mm=new THREE.MeshPhysicalMaterial(p);
         if(o.clear!=null){ mm.clearcoat=o.clear; mm.clearcoatRoughness=(o.clearRough==null?.18:o.clearRough); }
@@ -2936,8 +3080,9 @@ function furn3D(it, spec){
     const matlib = {
       fab:  new THREE.MeshStandardMaterial({map:fabricTexture(), color:col, roughness:.95, envMapIntensity:.25}),
       fabD: new THREE.MeshStandardMaterial({map:fabricTexture(), color:col.clone().multiplyScalar(.86), roughness:.95, envMapIntensity:.25}),
-      wood: new THREE.MeshPhysicalMaterial({map:furnWoodTexture(), normalMap:normalFromTexture(furnWoodTexture(),0.9),
-              color:col, roughness:.44, clearcoat:.34, clearcoatRoughness:.24, envMapIntensity:.6}),
+      wood: (()=>{ const tx=woodSpecies(spec.wood||'oak');
+              return new THREE.MeshPhysicalMaterial({map:tx, normalMap:normalFromTexture(tx,0.85),
+                color:col, roughness:.40, clearcoat:.40, clearcoatRoughness:.20, envMapIntensity:.7}); })(),
       chrome:new THREE.MeshStandardMaterial({color:0xc6cad0, roughness:.14, metalness:.94}),
       steel: new THREE.MeshStandardMaterial({color:0x9aa0a6, roughness:.35, metalness:.75}),
       black: new THREE.MeshStandardMaterial({color:0x24262a, roughness:.44, metalness:.5}),
@@ -3091,8 +3236,11 @@ function furn3D(it, spec){
       break;
     }
     case 'tableFold': case 'tableDrawer': {          // IKEA PS 2026 松木桌（含带抽屉款）
-      const pine=new THREE.MeshStandardMaterial({color:0xd9bf94, roughness:.62});
-      const pineD=new THREE.MeshStandardMaterial({color:0xc4a87c, roughness:.68});
+      const ptx=woodSpecies('pine');
+      const pine=new THREE.MeshPhysicalMaterial({map:ptx, normalMap:normalFromTexture(ptx,0.9),
+        color:0xdcbb8c, roughness:.38, clearcoat:.45, clearcoatRoughness:.18, envMapIntensity:.7});
+      const pineD=new THREE.MeshPhysicalMaterial({map:ptx, normalMap:normalFromTexture(ptx,0.9),
+        color:0xcaa87b, roughness:.42, clearcoat:.40, clearcoatRoughness:.22, envMapIntensity:.6});
       const tt=cm2ft(3.4);
       box(wf, tt, df, pine, 0, hf-tt);                                  // 桌面
       const lg=cm2ft(5);
@@ -3108,7 +3256,9 @@ function furn3D(it, spec){
       break;
     }
     case 'crib': {                                    // SNIGLAR 婴儿床：栏杆围合
-      const beech=new THREE.MeshStandardMaterial({color:0xdcc49b, roughness:.6});
+      const btx=woodSpecies('beech');
+      const beech=new THREE.MeshPhysicalMaterial({map:btx, normalMap:normalFromTexture(btx,0.8),
+        color:0xdcc49b, roughness:.5, clearcoat:.12, clearcoatRoughness:.4, envMapIntensity:.5});
       const wht=new THREE.MeshStandardMaterial({color:0xf2f0ea, roughness:.85});
       const post=cm2ft(5);
       for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])
@@ -3478,8 +3628,18 @@ function setView(v){
     : '左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
   $('#camSeg').style.display = v==='3d'?'flex':'none';
   $('#dnSeg').style.display = v==='3d'?'flex':'none';
-  if(v==='3d'){ if(!three) init3D(); else if(geoDirty3D) buildStatic3D(); geoDirty3D=false; sync3D();
-    if(!three.camMode) three.camMode='doll'; }
+  if(v==='3d'){
+    show3DLoading(three?'正在更新 3D 场景…':'正在生成 3D 场景（首次需要几秒）…');
+    // 用 setTimeout 而非 rAF 派发：无合成帧时 rAF 可能一直不触发，会把场景卡住不建
+    setTimeout(()=>{
+      try{
+        if(!three) init3D(); else if(geoDirty3D) buildStatic3D();
+        geoDirty3D=false; sync3D();
+        if(!three.camMode) three.camMode='doll';
+      }catch(e){ console.error(e); $('#loadTxt').textContent='3D 场景生成失败：'+e.message; }
+      setTimeout(hide3DLoading, 80);
+    }, 40);
+  } else hide3DLoading();
 }
 /* 单位切换 */
 document.querySelectorAll('#unitSeg button').forEach(b=>{
@@ -3572,6 +3732,9 @@ $('#wRestore').onclick=()=>{ if(confirm('恢复全部内置墙体/结构/门到�
 $('#wDone').onclick=()=>$('#btnWallEdit').onclick();
 /* 预设 */
 $('#btnReset').onclick=()=>{ if(confirm('载入所选方案？当前布局将被覆盖。')) loadPreset($('#presetSel').value); };
+function show3DLoading(msg){ const b=$('#loading3d'); if(!b) return;
+  $('#loadTxt').textContent=msg||'正在生成 3D 场景…'; b.style.display='flex'; }
+function hide3DLoading(){ const b=$('#loading3d'); if(b) b.style.display='none'; }
 /* 视角模式：娃娃屋 / 室内漫游 */
 const EYE_H = 5.35;              // 人眼高度 ≈163cm
 function setCamMode(m){
@@ -3590,7 +3753,7 @@ function setCamMode(m){
     controls.enabled=false;
     cam.fov=68; cam.updateProjectionMatrix();
     fpAim();
-    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>W/A/S/D 或方向键=走动</b>（Shift 加速）· 滚轮=前后移动 · 右键拖动=平移站位';
+    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>双击地面=走过去</b> · W/A/S/D=走动（Shift 加速）· 滚轮=前后 · 右键拖动=平移站位';
   } else {
     if(three.camMode!=='doll'){ three.fpPos=cam.position.clone();
       three.fpDir=controls.target.clone().sub(cam.position).normalize(); }
@@ -3619,9 +3782,50 @@ function fpAim(){
 }
 function fpForward(){ const y=three.fpYaw||0;
   return new THREE.Vector3(Math.sin(y),0,Math.cos(y)).normalize(); }
+/* 点是否在户型内（含阳台），用于限制漫游范围 */
+function insideFloorPt(x,z){
+  const test=(poly)=>{ let inside=false;
+    for(let i=0,j=poly.length-1;i<poly.length;j=i++){
+      const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];
+      if((yi>z)!==(yj>z) && x<(xj-xi)*(z-yi)/(yj-yi)+xi) inside=!inside; }
+    return inside; };
+  return test(FLOORPTS) || test(PATIO);
+}
+/* 街景式：双击地面走过去（保持朝向，平滑移动） */
+function walkTo(x,z){
+  if(!three) return;
+  const cam=three.cam, from=cam.position.clone(), to=new THREE.Vector3(x, EYE_H, z);
+  const dist=from.distanceTo(to);
+  const dur=Math.min(900, 260+dist*45);
+  const t0=performance.now();
+  if(three.walk){ clearInterval(three.walk.iv); three.walk.cancel=true; }
+  const ease=t=>t<.5? 2*t*t : 1-Math.pow(-2*t+2,2)/2;
+  const anim={cancel:false};
+  // 用定时器而非 rAF 驱动：页面无合成帧时 rAF 会被饿死，动画卡在原地
+  anim.iv=setInterval(()=>{
+    if(anim.cancel){ clearInterval(anim.iv); return; }
+    const t=Math.min(1,(performance.now()-t0)/dur);
+    cam.position.lerpVectors(from, to, ease(t));
+    cam.position.y=EYE_H;
+    fpAim();
+    if(t>=1){ clearInterval(anim.iv); three.walk=null; }
+  }, 16);
+  three.walk=anim;
+}
 (function installFPLook(){
   const canvas=$('#c3d'); if(!canvas) return;
   let drag=null;
+  canvas.addEventListener('dblclick', e=>{      // 双击地面=走过去（Google 街景逻辑）
+    if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+    const r=canvas.getBoundingClientRect();
+    const ndc=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+    three.cam.updateMatrixWorld(true);      // 射线必须基于最新的相机矩阵
+    const rc=new THREE.Raycaster(); rc.setFromCamera(ndc, three.cam);
+    const hit=new THREE.Vector3();
+    if(!rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0), hit)) return;
+    if(!insideFloorPt(hit.x,hit.z)){ return; }   // 不走到户型外
+    e.preventDefault(); walkTo(hit.x, hit.z);
+  });
   canvas.addEventListener('pointerdown', e=>{
     if(!three || three.camMode!=='fp' || state.view!=='3d') return;
     drag={x:e.clientX, y:e.clientY, btn:e.button};
