@@ -38,6 +38,10 @@
   #wallbar #wMsg{color:var(--muted); font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex:1; min-width:0;}
   #btnWallEdit.on{background:#26e0a8; color:#0b0d10;}
   #btnUnderlay.on{background:#3d8bfd; color:#fff;}
+  #btnPhoto{background:#6b4bd6; color:#fff;}
+  #photoBar{display:flex; align-items:center; gap:12px; padding:7px 16px; background:#241c3d; border-bottom:1px solid #3a2f5e; color:#cfc6f0; font-size:13px;}
+  #photoModal{position:fixed; inset:0; background:rgba(8,9,12,.93); z-index:50; align-items:center; justify-content:center;}
+  #photoOut{text-align:center; padding:20px;}
   body.wall-editing #catalog, body.wall-editing #placedList, body.wall-editing #customForm{pointer-events:none; opacity:.4;}
   .wHit{cursor:pointer;} .pHit{cursor:pointer;}
   .wEnd,.pVert{cursor:grab;} .pMid{cursor:copy;}
@@ -134,6 +138,14 @@
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btn3d">3D 渲染</button>
   </div>
+  <div class="seg" id="camSeg" style="display:none">
+    <button id="camDoll" class="on">娃娃屋</button>
+    <button id="camFP">室内视角</button>
+  </div>
+  <div class="seg" id="dnSeg" style="display:none">
+    <button id="dnDay" class="on">白天</button>
+    <button id="dnNight">夜晚</button>
+  </div>
   <select id="presetSel" title="布局方案">
     <option value="EMPTY">空白方案</option>
     <option value="A">参考方案A（沙发对电视墙）</option>
@@ -146,6 +158,7 @@
     <button data-u="ft">英尺</button>
   </div>
   <div class="spacer"></div>
+  <button class="btn" id="btnPhoto" title="渐进式累积渲染：软阴影 + 环境光 + 抗锯齿">照片级渲染</button>
   <button class="btn" id="btnUnderlay" title="把官方 layout 图垫在矢量图下，便于对照/描图">底图对照</button>
   <button class="btn" id="btnRefPhoto">原户型图</button>
   <button class="btn" id="btnExport">导出图片</button>
@@ -178,6 +191,9 @@
   <button class="btn" id="wDone">完成</button>
   <span id="wMsg"></span>
 </div>
+<div id="photoBar" style="display:none"><span id="photoTxt">照片级渲染中…</span>
+  <div style="flex:1"></div><button class="btn" id="photoCancel">取消</button></div>
+<div id="photoModal" style="display:none"><div id="photoOut"></div></div>
 <div id="main">
   <div id="catalog">
     <div class="search"><input id="catSearch" type="text" placeholder="搜索家具（如 KIVIK / 沙发）"></div>
@@ -207,9 +223,20 @@
     <div class="muted" id="pInfo">点击左侧目录添加家具；点击画布中的家具进行编辑。所有尺寸均为真实比例。</div>
     <div id="pFields" style="display:none; flex-direction:column; gap:8px;">
       <div class="field"><label>宽×深×高</label><span id="pDims" style="font-size:12px"></span></div>
-      <div class="field"><label>旋转</label><input id="pRot" type="number" step="15" style="width:70px"> °
+      <div class="field"><label>旋转</label><input id="pRot" type="number" step="1" style="width:64px"> °
+        <input id="pRotSlider" type="range" min="0" max="359" step="1" style="width:104px;vertical-align:middle">
         <button class="btn" id="pRot90" style="padding:2px 8px">+90°</button></div>
       <div class="field"><label>颜色</label><input id="pColor" type="color" style="width:50px;padding:2px;height:28px"></div>
+      <div id="pLightRow" style="display:none">
+        <div class="field"><label>色温</label>
+          <input id="pCCT" type="range" min="2200" max="6500" step="100" style="width:110px">
+          <span id="pCCTv" style="font-size:12px;width:52px;display:inline-block"></span></div>
+        <div class="field"><label>亮度</label>
+          <input id="pDim" type="range" min="10" max="150" step="5" style="width:110px">
+          <span id="pDimv" style="font-size:12px;width:42px;display:inline-block"></span></div>
+        <div id="cctBar" style="height:10px;border-radius:3px;margin:2px 0 6px;
+          background:linear-gradient(90deg,#ff9e42,#ffcf9a,#fff4e6,#ffffff,#e8f0ff,#cfe0ff)"></div>
+      </div>
       <div class="field" id="pPriceRow"><label>价格</label><span id="pPrice" style="font-size:12px"></span></div>
       <div class="field"><label>链接</label><a id="pUrl" target="_blank">—</a></div>
       <div style="display:flex; gap:8px;">
@@ -436,6 +463,69 @@ const DIMTXT = [];
 
 /* ---------- 家具目录（IKEA美国官网核实：2026-09；尺寸cm，价格USD） ---------- */
 const CATALOG = [
+ // ===== 2026-09 新增：按官网实测尺寸/价格/全部配色 =====
+ {id:'ps2026-tbl-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 折叠桌 · 松木/透明漆', w:156,d:75,h:73, price:299, color:'#DDB584', color2:'#C4262E', kind:'tableFold', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-folding-pine-clear-lacquered-00617861/', note:'设计师 Ola Wihlborg，实木交叉腿（cross-leg）折叠餐桌，坐 4 人'},
+ {id:'ps2026-tbl-drw-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 带抽屉桌 · 松木 清漆', w:70,d:70,h:75, price:249, color:'#D6AE7B', color2:'#1C63B8', kind:'tableDrawer', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-with-drawer-pine-clear-lacquered-40617878/', note:'IKEA PS 2026 系列双人方桌（设计师 Ola Wihlborg，货号 406.178.78）'},
+ {id:'vihals-chair-0', cat:'餐桌椅 / 吧凳', name:'VIHALS 餐椅 · 绿色 / Tibbleby 灰绿色', w:49,d:55,h:81, price:55, color:'#929683', color2:'#78846C', seatH:48, kind:'chair', url:'https://www.ikea.com/ca/en/p/vihals-chair-green-tibbleby-gray-green-90595124/', note:'【颜色字段约定】hex = 钢管框架/椅腿的粉末喷涂色（IKEA 型号名里的第一个颜色），hex2 = 座面与靠背软包织'},
+ {id:'vihals-chair-1', cat:'餐桌椅 / 吧凳', name:'VIHALS 餐椅 · 白色 / Tibbleby 米灰色', w:49,d:55,h:81, price:55, color:'#F2F1EC', color2:'#B6B4AC', seatH:48, kind:'chair', url:'https://www.ikea.com/ca/en/p/vihals-chair-green-tibbleby-gray-green-90595124/'},
+ {id:'ps2026-side-0', cat:'地毯 / 茶几 / 灯', name:'PS 2026 折叠边桌 · 深红', w:50,d:40,h:51, price:59.99, color:'#7A2A35', color2:'#68232E', kind:'sideTable', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-side-table-dark-red-80621067/', note:'设计师 David Wahl，2026 年 IKEA PS 系列'},
+ {id:'figgy-0', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 月光灰 Moonbeam', w:168,d:84,h:51, price:795, color:'#C6C5C3', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy', note:'儿童模块化泡棉游戏沙发，无任何硬质框架/支腿——整体直接坐落地面，是一堆布面包裹的泡棉块（FiggyFoam，Certi'},
+ {id:'figgy-1', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 海洋藏蓝 Ocean', w:168,d:84,h:51, price:795, color:'#38507B', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-2', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 炉甘石粉 Calamine', w:168,d:84,h:51, price:795, color:'#C8A796', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-3', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 鼠尾草绿 Sagebrush', w:168,d:84,h:51, price:795, color:'#A4BCAD', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-4', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 河石蓝灰 River Rock', w:168,d:84,h:51, price:795, color:'#8298A3', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-5', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 藕荷雾粉 Mauve Mist', w:168,d:84,h:51, price:795, color:'#C2A3A4', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-6', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 沙丘奶米 Dune', w:168,d:84,h:51, price:795, color:'#DED0BC', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-7', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 风滚草米棕 Tumbleweed', w:168,d:84,h:51, price:795, color:'#CCC2B2', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-8', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 炭灰 Charcoal', w:168,d:84,h:51, price:795, color:'#55565B', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-9', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 苔藓绿 Moss', w:168,d:84,h:51, price:795, color:'#616B45', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-10', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 日光芥黄 Sundance', w:168,d:84,h:51, price:795, color:'#CCA22B', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-11', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 蘑菇棕 Mushroom', w:168,d:84,h:51, price:795, color:'#A5794F', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-12', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 木槿玫红 Hibiscus', w:168,d:84,h:51, price:795, color:'#AC4260', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-13', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 克莱门汀橘 Clementine', w:168,d:84,h:51, price:795, color:'#C46209', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-14', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 橄榄雾绿 Olive Fog', w:168,d:84,h:51, price:795, color:'#7B8272', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-15', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 祖母绿 Emerald', w:168,d:84,h:51, price:795, color:'#2E5349', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-16', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 红宝石 Ruby', w:168,d:84,h:51, price:795, color:'#96131F', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-17', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 沙漠珊瑚 Desert Coral', w:168,d:84,h:51, price:795, color:'#BE5B50', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'figgy-18', cat:'沙发 / 单椅', name:'Figgy 儿童模块沙发 The Figgy · 靛蓝水洗 Indigo Wash', w:168,d:84,h:51, price:795, color:'#5E7E96', seatH:23, kind:'playCouch', url:'https://figgyplay.com/en-ca/products/the-figgy'},
+ {id:'saltsjobaden-0', cat:'沙发 / 单椅', name:'SALTSJÖBADEN 单人扶手椅 · Tonerud 灰色', w:93,d:88,h:90, price:379, color:'#9E9C96', color2:'#C9A575', seatH:46, kind:'armchair', url:'https://www.ikea.com/ca/en/p/saltsjoebaden-armchair-tonerud-gray-s99578568/', note:'宽扁敦实的单人沙发椅，官方尺寸 W93×D88×H90cm，座宽69/座深55/座高46cm（低坐姿）'},
+ {id:'saltsjobaden-1', cat:'沙发 / 单椅', name:'SALTSJÖBADEN 单人扶手椅 · Tonerud 红棕色', w:93,d:88,h:90, price:379, color:'#90523F', color2:'#C9A575', seatH:46, kind:'armchair', url:'https://www.ikea.com/ca/en/p/saltsjoebaden-armchair-tonerud-gray-s99578568/'},
+ {id:'saltsjobaden-2', cat:'沙发 / 单椅', name:'SALTSJÖBADEN 单人扶手椅 · Blekinge 白色', w:93,d:88,h:90, price:379, color:'#E9E6DF', color2:'#C9A575', seatH:46, kind:'armchair', url:'https://www.ikea.com/ca/en/p/saltsjoebaden-armchair-tonerud-gray-s99578568/'},
+ {id:'saltsjobaden-3', cat:'沙发 / 单椅', name:'SALTSJÖBADEN 单人扶手椅 · Fridtuna 浅米色', w:93,d:88,h:90, price:379, color:'#D6C9B6', color2:'#C9A575', seatH:46, kind:'armchair', url:'https://www.ikea.com/ca/en/p/saltsjoebaden-armchair-tonerud-gray-s99578568/'},
+ {id:'dyvlinge-0', cat:'书桌 / 办公椅', name:'DYVLINGE 旋转椅 · Kelinge 米色', w:63,d:75,h:68, price:299, color:'#C8B49A', color2:'#C2C6CA', seatH:43, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/dyvlinge-swivel-chair-kelinge-beige-60623859/', note:'复刻 1967 年 MILA“抗压力扶手椅”的 Nytillverkad 系列单椅，整体是矮胖的复古蛋壳/桶形造型'},
+ {id:'dyvlinge-1', cat:'书桌 / 办公椅', name:'DYVLINGE 旋转椅 · Kelinge 黑色', w:63,d:75,h:68, price:299, color:'#262626', color2:'#C2C6CA', seatH:43, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/dyvlinge-swivel-chair-kelinge-beige-60623859/'},
+ {id:'dyvlinge-2', cat:'书桌 / 办公椅', name:'DYVLINGE 旋转椅 · Kelinge 绿色', w:63,d:75,h:68, price:299, color:'#3E5B46', color2:'#C2C6CA', seatH:43, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/dyvlinge-swivel-chair-kelinge-beige-60623859/'},
+ {id:'orfjall-0', cat:'书桌 / 办公椅', name:'ÖRFJÄLL 转椅 · 白色/Vissle 深蓝', w:68,d:68,h:93, price:99, color:'#3B4A63', color2:'#F4F3F0', seatH:47, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/oerfjaell-swivel-chair-white-vissle-dark-blue-s49590983/', note:'IKEA 官方尺寸（Product dimensions）：宽 68 / 深 68（五爪底座最大跨距）；总高可调 82–'},
+ {id:'orfjall-1', cat:'书桌 / 办公椅', name:'ÖRFJÄLL 转椅 · 白色/Vissle 浅灰', w:68,d:68,h:93, price:99, color:'#B8B8B2', color2:'#F4F3F0', seatH:47, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/oerfjaell-swivel-chair-white-vissle-dark-blue-s49590983/'},
+ {id:'orfjall-2', cat:'书桌 / 办公椅', name:'ÖRFJÄLL 转椅 · 黑色/Vissle 红', w:68,d:68,h:93, price:99, color:'#B03A31', color2:'#2B2B2B', seatH:47, kind:'swivelChair', url:'https://www.ikea.com/ca/en/p/oerfjaell-swivel-chair-white-vissle-dark-blue-s49590983/'},
+ {id:'idasen-desk-0', cat:'书桌 / 办公椅', name:'IDÅSEN 电动升降桌 · 黑色/深灰', w:160,d:80,h:127, price:799, color:'#2A2A2C', color2:'#4C4F52', kind:'deskSitStand', url:'https://www.ikea.com/ca/en/p/idasen-desk-sit-stand-black-dark-gray-s79280998/', note:'IKEA 加拿大站 IDÅSEN 电动升降办公桌，商品号 792.809.98，售价 CAD $799'},
+ {id:'idasen-desk-1', cat:'书桌 / 办公椅', name:'IDÅSEN 电动升降桌 · 棕色/深灰', w:160,d:80,h:127, price:799, color:'#6E4B33', color2:'#4C4F52', kind:'deskSitStand', url:'https://www.ikea.com/ca/en/p/idasen-desk-sit-stand-black-dark-gray-s79280998/'},
+ {id:'sniglar-crib-0', cat:'床 / 床头柜', name:'SNIGLAR 婴儿床 · 山毛榉原木色', w:137,d:74,h:84, price:159, color:'#DCBB90', color2:'#C9A06E', kind:'crib', url:'https://www.ikea.com/ca/en/p/sniglar-crib-beech-50248541/', note:'极简未上漆实木婴儿床（型号 502.485.41）'},
+ {id:'kallax-a-0', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 白色', w:111.5,d:39,h:146.5, price:149, color:'#F3F3F1', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/', note:'经典 KALLAX 方格柜，竖放时为 3 列 x 4 行 = 12 个方格（也可横放当边柜，此时 4 列 x 3 行）'},
+ {id:'kallax-a-1', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 黑棕色', w:111.5,d:39,h:146.5, price:149, color:'#2C2422', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
+ {id:'kallax-a-2', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 白色仿橡木纹', w:111.5,d:39,h:146.5, price:149, color:'#DFD5C6', color2:'#C9BCA6', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
+ {id:'kallax-a-3', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 白色橡木纹', w:111.5,d:39,h:146.5, price:149, color:'#DED5C7', color2:'#C3B49E', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
+ {id:'kallax-a-4', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 112x147 · 黑褐色', w:111.5,d:39,h:146.5, price:149, color:'#372A21', color2:'#241A14', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-90637299/'},
+ {id:'kallax-b-0', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 147x147 · 白色', w:147,d:39,h:146.5, price:179, color:'#F3F2EF', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-10637302/', note:'正方形大立柜：147(W) x 39(D) x 146.5(H) cm，正面是 4x4 共 16 个开放方格，每格净空约'},
+ {id:'kallax-b-1', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 147x147 · 黑棕色', w:147,d:39,h:146.5, price:179, color:'#2E2521', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-10637302/'},
+ {id:'kallax-b-2', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 147x147 · 白色仿橡木纹', w:147,d:39,h:146.5, price:179, color:'#D9CDBE', color2:'#C6B69F', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-10637302/'},
+ {id:'kallax-d-0', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 182x182 · 白染橡木纹', w:182,d:39,h:182, price:249, color:'#E2D9CE', color2:'#C7B9A8', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-stained-oak-effect-90324509/', note:'IKEA CA 产品页 90324509（art. 903.245.09）实测数据：Product dimensions'},
+ {id:'kallax-d-1', cat:'收纳 / 电视柜', name:'KALLAX 搁架单元 182x182 · 黑褐色', w:182,d:39,h:182, price:249, color:'#2F2723', color2:'#453830', kind:'shelf', url:'https://www.ikea.com/ca/en/p/kallax-shelf-unit-white-stained-oak-effect-90324509/'},
+ {id:'raskog-0', cat:'收纳 / 电视柜', name:'RÅSKOG 手推车 · 粉色', w:35,d:45,h:77, price:39.99, color:'#EAB8BA', color2:'#3A3A3C', kind:'cart', url:'https://www.ikea.com/ca/en/p/raskog-utility-cart-pink-70629714/', note:'IKEA 经典三层移动小推车（大号 35×45×77 cm，含脚轮总高；官方另有 28×38×61 cm 小号，本条目为'},
+ {id:'raskog-1', cat:'收纳 / 电视柜', name:'RÅSKOG 手推车 · 黑色', w:35,d:45,h:77, price:39.99, color:'#2E2E2E', color2:'#1F1F1F', kind:'cart', url:'https://www.ikea.com/ca/en/p/raskog-utility-cart-pink-70629714/'},
+ {id:'raskog-2', cat:'收纳 / 电视柜', name:'RÅSKOG 手推车 · 红棕色', w:35,d:45,h:77, price:39.99, color:'#7E4038', color2:'#3A3A3C', kind:'cart', url:'https://www.ikea.com/ca/en/p/raskog-utility-cart-pink-70629714/'},
+ {id:'raskog-3', cat:'收纳 / 电视柜', name:'RÅSKOG 手推车 · 白色', w:35,d:45,h:77, price:39.99, color:'#F5F5F3', color2:'#3A3A3C', kind:'cart', url:'https://www.ikea.com/ca/en/p/raskog-utility-cart-pink-70629714/'},
+ // —— 灯具（可调色温；3D 中为真实光源）——
+ {id:'dl-4', cat:'灯具 / 照明', name:'筒灯 4″（嵌入式）', w:12,d:12,h:6, price:35, color:'#f2efe8', kind:'downlight', cct:3000, lum:900, note:'吸顶嵌入；色温可调 2700-6500K'},
+ {id:'dl-6', cat:'灯具 / 照明', name:'筒灯 6″（嵌入式）', w:17,d:17,h:7, price:45, color:'#f2efe8', kind:'downlight', cct:3000, lum:1300},
+ {id:'cl-flush', cat:'灯具 / 照明', name:'吸顶灯 Ø38（圆形）', w:38,d:38,h:9, price:79, color:'#f4f2ec', kind:'ceilingLight', cct:3500, lum:1800},
+ {id:'cl-flush-l', cat:'灯具 / 照明', name:'吸顶灯 Ø50（圆形）', w:50,d:50,h:11, price:119, color:'#f4f2ec', kind:'ceilingLight', cct:3500, lum:2600},
+ {id:'vanity-3', cat:'灯具 / 照明', name:'镜前灯 3 头（60cm）', w:60,d:12,h:12, price:99, color:'#d8d5d0', kind:'vanityLight', cct:3000, lum:1200, note:'装在卫生间镜子上方'},
+ {id:'vanity-4', cat:'灯具 / 照明', name:'镜前灯 4 头（90cm）', w:90,d:12,h:12, price:139, color:'#d8d5d0', kind:'vanityLight', cct:3000, lum:1600},
+ {id:'pendant', cat:'灯具 / 照明', name:'吊灯（岛台用）', w:26,d:26,h:30, price:129, color:'#2c2f34', kind:'pendant', cct:2700, lum:800, note:'吊挂高度距地约 165cm'},
+ // —— 床（铁架床，床架与床垫同尺寸）——
+ {id:'bed-metal-q', cat:'床 / 床头柜', name:'铁架床 Queen + 床垫', w:152,d:203,h:60, price:420, color:'#26282c', kind:'bedMetal', note:'Queen 60″×80″；铁架与床垫同宽同长（无外框外扩）'},
+ {id:'bed-metal-f', cat:'床 / 床头柜', name:'铁架床 Full + 床垫', w:137,d:191,h:60, price:380, color:'#26282c', kind:'bedMetal', note:'Full 54″×75″；铁架与床垫同宽同长'},
  // —— 沙发/单椅 ——
  {id:'kivik3', cat:'沙发 / 单椅', name:'KIVIK 三人沙发', w:228,d:95,h:83, price:899, color:'#8d8579', kind:'sofa', url:'https://www.ikea.com/us/en/p/kivik-sofa-tresund-anthracite-s39482837/', note:'可拆洗，多色 $849-999'},
  {id:'kivik2', cat:'沙发 / 单椅', name:'KIVIK 双人沙发', w:190,d:95,h:83, price:849, color:'#8d8579', kind:'sofa', url:'https://www.ikea.com/us/en/p/kivik-loveseat-tresund-light-beige-s29482828/'},
@@ -605,6 +695,21 @@ function itemSpec(it){
   return it.custom;
 }
 function itemName(it){ const s=itemSpec(it); return s? s.name : '?'; }
+/* 色温(K) → 线性 RGB（Tanner Helland 近似），用于灯光与灯具发光面 */
+function cctToRGB(k){
+  k=Math.max(1800,Math.min(7500,k))/100;
+  let r,g,b;
+  if(k<=66){ r=255; g=99.47*Math.log(k)-161.12; }
+  else { r=329.7*Math.pow(k-60,-0.1332); g=288.12*Math.pow(k-60,-0.0755); }
+  if(k>=66) b=255;
+  else if(k<=19) b=0;
+  else b=138.52*Math.log(k-10)-305.04;
+  const cl=v=>Math.max(0,Math.min(255,v))/255;
+  return new THREE.Color(cl(r),cl(g),cl(b));
+}
+function itemCCT(it){ const s=itemSpec(it)||{}; return it.cct || s.cct || 3000; }
+function itemLum(it){ const s=itemSpec(it)||{}; return (it.lum || s.lum || 800) * (it.dim==null?1:it.dim); }
+function isLight(spec){ return spec && ['downlight','ceilingLight','vanityLight','pendant'].includes(spec.kind); }
 function itemColor(it){ return it.color || (itemSpec(it)||{}).color || '#8a7d6b'; }
 
 const GEO_VERSION = 3; // 户型几何版本：旧版本存档坐标不兼容，自动放弃
@@ -1041,6 +1146,70 @@ function furnShape(it, spec){
   const body = el('g',{},g);
   const R = (x,y,w,h,rx,fill,extra)=>el('rect',Object.assign({x:x*S,y:y*S,width:w*S,height:h*S,rx:rx,fill:fill},extra||{}),body);
   const isRug = kind==='rug';
+  // 灯具：用照明平面图常用符号，并按色温着色
+  if(isLight(spec)){
+    const cc=cctToRGB(itemCCT(it)), hex='#'+cc.getHexString();
+    const r=wp/2;
+    if(kind==='downlight'){
+      el('circle',{cx:0,cy:0,r:r,fill:hex,'fill-opacity':.30,stroke:hex,'stroke-width':1.4},body);
+      el('line',{x1:-r,y1:0,x2:r,y2:0,stroke:hex,'stroke-width':1},body);
+      el('line',{x1:0,y1:-r,x2:0,y2:r,stroke:hex,'stroke-width':1},body);
+    } else if(kind==='ceilingLight'){
+      el('circle',{cx:0,cy:0,r:r,fill:hex,'fill-opacity':.26,stroke:hex,'stroke-width':1.6},body);
+      el('circle',{cx:0,cy:0,r:r*0.55,fill:'none',stroke:hex,'stroke-width':1},body);
+      for(let a=0;a<8;a++){ const t=a*Math.PI/4;
+        el('line',{x1:Math.cos(t)*r*0.6,y1:Math.sin(t)*r*0.6,x2:Math.cos(t)*r,y2:Math.sin(t)*r,stroke:hex,'stroke-width':.8},body); }
+    } else if(kind==='vanityLight'){
+      el('rect',{x:-wp/2,y:-dp/2,width:wp,height:dp,rx:2,fill:hex,'fill-opacity':.26,stroke:hex,'stroke-width':1.3},body);
+      const n=spec.w>75?4:3;
+      for(let i=0;i<n;i++) el('circle',{cx:-wp/2+wp*(i+.5)/n,cy:0,r:Math.min(dp,wp/n)*0.30,fill:hex,'fill-opacity':.75},body);
+    } else {
+      el('circle',{cx:0,cy:0,r:r,fill:hex,'fill-opacity':.28,stroke:hex,'stroke-width':1.5},body);
+      el('circle',{cx:0,cy:0,r:r*0.3,fill:hex,'fill-opacity':.8},body);
+      for(let a=0;a<4;a++){ const t=a*Math.PI/2+Math.PI/4;
+        el('line',{x1:Math.cos(t)*r,y1:Math.sin(t)*r,x2:Math.cos(t)*r*1.5,y2:Math.sin(t)*r*1.5,stroke:hex,'stroke-width':.9},body); }
+    }
+    const lb=el('text',{x:0,y:dp/2+9,'text-anchor':'middle','font-size':8,fill:hex,'pointer-events':'none'},body);
+    lb.textContent=itemCCT(it)+'K';
+    return g;
+  }
+  // 新品类 2D 俯视图例
+  if(['shelf','crib','cart','deskSitStand','swivelChair','playCouch','tableFold','tableDrawer'].includes(kind)){
+    const dk2='rgba(0,0,0,.30)', lt2='rgba(255,255,255,.22)';
+    if(kind==='shelf'){
+      R(-wf/2,-df/2,wf,df,2,col,{stroke:'rgba(0,0,0,.45)','stroke-width':1.2});
+      const cols=Math.max(1,Math.round(wf/cm2ft(39)));
+      for(let c=1;c<cols;c++) el('line',{x1:(-wf/2+wf*c/cols)*S,y1:-dp/2,x2:(-wf/2+wf*c/cols)*S,y2:dp/2,stroke:dk2,'stroke-width':1},body);
+    } else if(kind==='crib'){
+      R(-wf/2,-df/2,wf,df,3,col,{stroke:'rgba(0,0,0,.45)','stroke-width':1.4});
+      R(-wf/2+.18,-df/2+.18,wf-.36,df-.36,2,'rgba(255,255,255,.30)');
+      const n=Math.round(wf/cm2ft(7));
+      for(let i=1;i<n;i++){ const x=(-wf/2+wf*i/n)*S;
+        el('line',{x1:x,y1:-dp/2,x2:x,y2:-dp/2+3.5,stroke:dk2,'stroke-width':.9},body);
+        el('line',{x1:x,y1:dp/2-3.5,x2:x,y2:dp/2,stroke:dk2,'stroke-width':.9},body); }
+    } else if(kind==='cart'){
+      R(-wf/2,-df/2,wf,df,2,col,{stroke:'rgba(0,0,0,.45)','stroke-width':1.2});
+      R(-wf/2+.1,-df/2+.1,wf-.2,df-.2,1.5,'rgba(0,0,0,.18)');
+      el('line',{x1:-wp/2,y1:-dp/2+2,x2:wp/2,y2:-dp/2+2,stroke:lt2,'stroke-width':2},body);
+    } else if(kind==='deskSitStand'){
+      R(-wf/2,-df/2,wf,df,2,col,{stroke:'rgba(0,0,0,.45)','stroke-width':1.2});
+      for(const sx of [-1,1]) R(sx*(wf/2-cm2ft(20))-cm2ft(3), -df/2+cm2ft(8), cm2ft(6), df-cm2ft(16), 1, dk2);
+    } else if(kind==='swivelChair'){
+      el('circle',{cx:0,cy:0,r:wp*0.46,fill:col,stroke:'rgba(0,0,0,.4)','stroke-width':1.2},body);
+      for(let i=0;i<5;i++){ const a=i*Math.PI*2/5+Math.PI/2;
+        el('line',{x1:0,y1:0,x2:Math.cos(a)*wp*0.5,y2:Math.sin(a)*wp*0.5,stroke:dk2,'stroke-width':1.4},body); }
+      el('path',{d:`M ${-wp*0.42} ${-dp*0.28} A ${wp*0.44} ${wp*0.44} 0 0 1 ${wp*0.42} ${-dp*0.28}`,
+        fill:'none',stroke:dk2,'stroke-width':3.2},body);
+    } else if(kind==='playCouch'){
+      R(-wf/2,-df/2,wf,df,4,col,{stroke:'rgba(0,0,0,.4)','stroke-width':1.2});
+      R(-wf/2+.08,-df/2+.08,wf-.16,cm2ft(20),3,'rgba(0,0,0,.20)');
+      el('line',{x1:0,y1:-dp/2+8,x2:0,y2:dp/2,stroke:lt2,'stroke-width':1.4},body);
+    } else {   // tableFold / tableDrawer
+      R(-wf/2,-df/2,wf,df,2,col,{stroke:'rgba(0,0,0,.45)','stroke-width':1.2});
+      for(let i=1;i<6;i++) el('line',{x1:-wp/2,y1:-dp/2+dp*i/6,x2:wp/2,y2:-dp/2+dp*i/6,stroke:'rgba(0,0,0,.10)','stroke-width':.8},body);
+      if(kind==='tableDrawer') R(-Math.min(wf*0.21,cm2ft(23)), df/2-cm2ft(4), Math.min(wf*0.42,cm2ft(46)), cm2ft(3), 1, dk2);
+    }
+  } else
   // 主体
   if(kind==='tableRound' || (kind==='sideTable' && spec.w===spec.d && spec.w>=60)){
     el('circle',{cx:0,cy:0,r:wp/2,fill:col,stroke:'rgba(0,0,0,.4)','stroke-width':1.2},body);
@@ -1094,10 +1263,11 @@ function drawFurniture(){
   if(!gFurn) return;
   gFurn.innerHTML=''; gSel.innerHTML='';
   // 地毯先画
-  const sorted = [...state.items].sort((a,b)=>{
-    const ka=(itemSpec(a)||{}).kind==='rug'?0:1, kb=(itemSpec(b)||{}).kind==='rug'?0:1;
-    return ka-kb;
-  });
+  const layer = (it)=>{ const sp=itemSpec(it)||{};
+    if(sp.kind==='rug') return 0;                  // 地毯最底
+    if(isLight(sp)) return 2;                      // 灯具永远最上层
+    return 1; };
+  const sorted = [...state.items].sort((a,b)=>layer(a)-layer(b));
   const boxes = [];
   for(const it of sorted){
     const spec = itemSpec(it); if(!spec) continue;
@@ -1212,7 +1382,7 @@ svg.addEventListener('pointermove', ev=>{
     it.y = Math.round((p[1]+drag.dy)*20)/20;
   } else if(drag.mode==='rotate'){
     let a = Math.atan2(p[0]-drag.cx, -(p[1]-drag.cy))*180/Math.PI; // handle在-y方向
-    if(!ev.shiftKey) a = Math.round(a/15)*15;
+    if(!ev.shiftKey) a = Math.round(a/5)*5;      // 默认 5° 吸附；按住 Shift 可任意角度
     it.rot = Math.round(a*10)/10;
   }
   drawFurniture();
@@ -1275,6 +1445,8 @@ window.addEventListener('keydown', ev=>{
   const it = state.items.find(i=>i.uid===selected); if(!it) return;
   if(ev.key==='Delete'||ev.key==='Backspace'){ state.items=state.items.filter(i=>i.uid!==selected); selected=null; drawFurniture(); save(); }
   else if(ev.key==='r'||ev.key==='R'){ it.rot=(it.rot+ (ev.shiftKey?-15:15))%360; drawFurniture(); save(); }
+  else if(ev.key==='['||ev.key===']'){ const st=ev.shiftKey?0.1:1;
+    it.rot=Math.round(((it.rot+(ev.key===']'?st:-st))%360)*10)/10; drawFurniture(); save(); }
   else if(ev.key==='d'||ev.key==='D'){ const n={...it, uid:uidSeq++, x:it.x+1.5, y:it.y+1.5}; state.items.push(n); selected=n.uid; drawFurniture(); save(); }
   else if(ev.key.startsWith('Arrow')){
     const st = ev.shiftKey? 1/12 : 0.25;
@@ -1742,8 +1914,11 @@ function init3D(){
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.physicallyCorrectLights = true;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 0.92;
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x181a1e);
+  scene.background = new THREE.Color(0x141821);
   const cam = new THREE.PerspectiveCamera(55, 1, 0.1, 500);
   // 场景中心
   const CTR = [26, 20];
@@ -1764,19 +1939,23 @@ function init3D(){
   canvas.addEventListener('contextmenu', e=>e.preventDefault());
   controls.update();
   // 光
-  const amb = new THREE.AmbientLight(0xffffff, .45); scene.add(amb);
-  const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3226, .35); scene.add(hemi);
-  const sun = new THREE.DirectionalLight(0xfff2df, 1.1);
+  const amb = new THREE.AmbientLight(0xf2f4f8, .28); scene.add(amb);
+  const hemi = new THREE.HemisphereLight(0xbfd4ff, 0x3a3226, .55); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffeeda, 1.85);
   sun.position.set(-18, 30, 38);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048,2048);
+  sun.shadow.bias = -0.0006;
+  sun.shadow.normalBias = 0.02;
   const sc = 32;
   sun.shadow.camera.left=-sc; sun.shadow.camera.right=sc;
   sun.shadow.camera.top=sc; sun.shadow.camera.bottom=-sc;
   sun.shadow.camera.far = 120;
   sun.target.position.set(CTR[0],0,CTR[1]); scene.add(sun.target);
   scene.add(sun);
-  three = {renderer, scene, cam, controls, canvas, furnGroup:new THREE.Group()};
+  three = {renderer, scene, cam, controls, canvas, furnGroup:new THREE.Group(),
+           sun, amb, hemi, sunHome:sun.position.clone(), photo:null};
+  buildEnvironment();
   buildStatic3D();
   scene.add(three.furnGroup);
   const resize=()=>{
@@ -1785,7 +1964,7 @@ function init3D(){
     cam.aspect=w/h; cam.updateProjectionMatrix();
   };
   new ResizeObserver(resize).observe(canvas.parentElement); resize();
-  (function loop(){ requestAnimationFrame(loop); controls.update(); renderer.render(scene,cam); })();
+  (function loop(){ requestAnimationFrame(loop); fpStep(); controls.update(); if(!three.photo) renderer.render(scene,cam); })();
 }
 let _woodTexCache=null;
 /* 地板：深冷灰褐宽板（对照 704/705 实拍——深烟熏橡木，偏冷灰不偏橙） */
@@ -1919,6 +2098,124 @@ function wallMesh(s, h, thick, mat, ext){
   m.castShadow=m.receiveShadow=true;
   return m;
 }
+/* 窗外全景：西雅图市中心 33 层视角（按 704/705 实拍配色近似）
+   day=白天蓝天+远山+高楼群；night=夜景，楼体亮窗+城市辉光 */
+let _skyCache={};
+function cityPanorama(night){
+  if(_skyCache[night?'n':'d']) return _skyCache[night?'n':'d'];
+  const W=2048,H=1024, HZ=Math.round(H*0.54);       // 地平线（33层略俯视）
+  const c=document.createElement('canvas'); c.width=W;c.height=H;
+  const g=c.getContext('2d');
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  // —— 天空 ——
+  const sky=g.createLinearGradient(0,0,0,HZ);
+  if(night){ sky.addColorStop(0,'#070b16'); sky.addColorStop(0.6,'#131c2e'); sky.addColorStop(1,'#33354a'); }
+  else { sky.addColorStop(0,'#4f86c6'); sky.addColorStop(0.55,'#9cc3e4'); sky.addColorStop(1,'#d8e6f2'); }
+  g.fillStyle=sky; g.fillRect(0,0,W,HZ);
+  if(!night){ g.fillStyle='rgba(255,252,240,.85)';
+    g.beginPath(); g.ellipse(430,150,52,34,0,0,Math.PI*2); g.fill();
+    for(let i=0;i<26;i++){ g.fillStyle=`rgba(255,255,255,${rnd(0.06,0.20)})`;
+      const x=rnd(0,W), y=rnd(20,HZ-90), w=rnd(90,320), h=rnd(14,42);
+      g.beginPath(); g.ellipse(x,y,w/2,h/2,0,0,Math.PI*2); g.fill(); }
+  } else {
+    for(let i=0;i<170;i++){ g.fillStyle=`rgba(255,255,255,${rnd(0.15,0.7)})`;
+      g.fillRect(rnd(0,W), rnd(0,HZ-140), 1.3, 1.3); }
+    const glow=g.createLinearGradient(0,HZ-150,0,HZ);
+    glow.addColorStop(0,'rgba(255,150,60,0)'); glow.addColorStop(1,'rgba(255,150,60,.30)');
+    g.fillStyle=glow; g.fillRect(0,HZ-150,W,150);
+  }
+  // —— 远山（西雅图东侧山脊/奥林匹克）——
+  g.fillStyle = night? 'rgba(22,28,44,.95)' : 'rgba(126,146,166,.72)';
+  g.beginPath(); g.moveTo(0,HZ);
+  for(let x=0;x<=W;x+=32) g.lineTo(x, HZ-38-Math.sin(x*0.0032)*24-Math.sin(x*0.011)*13-rnd(0,7));
+  g.lineTo(W,HZ); g.closePath(); g.fill();
+  // —— 水面（Puget Sound / Lake Union）——
+  g.fillStyle = night? '#0b1220' : '#7d9db6';
+  g.fillRect(0,HZ-16,W,30);
+  // —— 城市：远景低层铺底 + 近景高楼群 ——
+  const bldg=(x,w,top,dark,winW,winH)=>{
+    const bh=HZ+130-top;
+    g.fillStyle = night? `rgba(${18+dark*10|0},${21+dark*10|0},${30+dark*12|0},1)`
+                       : `rgba(${104+dark*46|0},${112+dark*46|0},${124+dark*44|0},1)`;
+    g.fillRect(x,top,w,bh);
+    g.fillStyle = night? 'rgba(0,0,0,.35)' : 'rgba(255,255,255,.10)';
+    g.fillRect(x,top,Math.max(2,w*0.16),bh);                       // 受光侧
+    for(let wy=top+9; wy<HZ+120; wy+=winH){                        // 窗格
+      for(let wx=x+4; wx<x+w-5; wx+=winW){
+        if(night){ if(Math.random()<0.34){
+            const warm=Math.random()<0.72;
+            g.fillStyle=warm?`rgba(255,214,140,${rnd(0.55,0.95)})`:`rgba(190,220,255,${rnd(0.45,0.8)})`;
+            g.fillRect(wx,wy,winW-2.2,winH-2.6); } }
+        else { g.fillStyle=`rgba(${28+Math.random()*30|0},${44+Math.random()*34|0},${66+Math.random()*40|0},${rnd(0.35,0.7)})`;
+            g.fillRect(wx,wy,winW-2.2,winH-2.6); }
+      }
+    }
+  };
+  for(let x=-20;x<W;x+=rnd(26,58)){                                 // 远景城市底铺
+    const w=rnd(24,62), top=HZ-rnd(6,40);
+    bldg(x,w,top,rnd(-.35,.15), 6, 7);
+  }
+  const CLUSTER=[[150,520],[980,1420]];                             // 两片高楼群（市中心方向）
+  for(const [a,b] of CLUSTER){
+    for(let x=a;x<b;x+=rnd(46,104)){
+      const w=rnd(42,96), top=HZ-rnd(90,330);
+      bldg(x,w,top,rnd(-.2,.5), 9, 11);
+      if(!night && Math.random()<0.5){                              // 玻璃幕墙高光
+        const gr=g.createLinearGradient(x,top,x+w,top+120);
+        gr.addColorStop(0,'rgba(220,238,255,.22)'); gr.addColorStop(1,'rgba(220,238,255,0)');
+        g.fillStyle=gr; g.fillRect(x,top,w,140);
+      }
+    }
+  }
+  // —— 地面（俯视看到的街区）——
+  const grd=g.createLinearGradient(0,HZ+40,0,H);
+  if(night){ grd.addColorStop(0,'#0d1119'); grd.addColorStop(1,'#05070b'); }
+  else { grd.addColorStop(0,'#6f7b74'); grd.addColorStop(1,'#4a534d'); }
+  g.fillStyle=grd; g.fillRect(0,HZ+120,W,H-HZ-120);
+  for(let i=0;i<260;i++){                                            // 街区色块
+    const x=rnd(0,W), y=rnd(HZ+120,H), w=rnd(14,54), h=rnd(8,26);
+    g.fillStyle = night? `rgba(${rnd(14,30)|0},${rnd(16,32)|0},${rnd(22,42)|0},.9)`
+                       : `rgba(${rnd(70,130)|0},${rnd(78,132)|0},${rnd(72,122)|0},.85)`;
+    g.fillRect(x,y,w,h);
+    if(night && Math.random()<0.3){ g.fillStyle='rgba(255,190,110,.5)'; g.fillRect(x+w/2,y+h/2,1.6,1.6); }
+  }
+  const t=new THREE.CanvasTexture(c);
+  t.mapping=THREE.EquirectangularReflectionMapping; t.encoding=THREE.sRGBEncoding;
+  _skyCache[night?'n':'d']=t; return t;
+}
+function buildEnvironment(){
+  const night = three.night;
+  const tex = cityPanorama(night);
+  const pm=new THREE.PMREMGenerator(three.renderer); pm.compileEquirectangularShader();
+  if(three.env) three.env.dispose();
+  const env=pm.fromEquirectangular(tex).texture;
+  three.scene.environment=env; three.env=env;
+  three.scene.background=tex;
+  three.scene.fog = new THREE.Fog(night?0x0b1018:0xb9cfe2, 120, 420);
+  pm.dispose();
+}
+/* 白天 / 夜晚 */
+function setDayNight(night){
+  if(!three) return;
+  three.night=night;
+  const {sun,amb,hemi,renderer}=three;
+  if(night){
+    sun.color.set(0x93a9d4); sun.intensity=0.16;
+    sun.position.set(30,26,-34);
+    amb.color.set(0x2c3550); amb.intensity=0.10;
+    hemi.color.set(0x3a4d78); hemi.groundColor.set(0x14161c); hemi.intensity=0.16;
+    renderer.toneMappingExposure=1.25;
+  } else {
+    sun.color.set(0xffeeda); sun.intensity=1.85;
+    sun.position.copy(three.sunHome);
+    amb.color.set(0xf2f4f8); amb.intensity=0.28;
+    hemi.color.set(0xbfd4ff); hemi.groundColor.set(0x3a3226); hemi.intensity=0.55;
+    renderer.toneMappingExposure=0.92;
+  }
+  buildEnvironment();
+  $('#dnDay').classList.toggle('on', !night);
+  $('#dnNight').classList.toggle('on', night);
+}
 function buildStatic3D(){
   // 所有静态构件挂在一个可整体替换的 Group 上，墙体编辑后重建
   if(three.staticGroup){
@@ -1928,7 +2225,7 @@ function buildStatic3D(){
   }
   const scene = new THREE.Group();
   three.scene.add(scene); three.staticGroup = scene;
-  const matWall = new THREE.MeshStandardMaterial({color:0xece9e3, roughness:.93});
+  const matWall = new THREE.MeshStandardMaterial({color:0xd8d5d0, roughness:.97, envMapIntensity:.28});
   const matGlass = new THREE.MeshPhysicalMaterial({color:0xa8c8e8, transparent:true, opacity:.18, roughness:.05, metalness:.1});
   const matFrame = new THREE.MeshStandardMaterial({color:0x1b1d20, roughness:.45, metalness:.5});
   const matDark = new THREE.MeshStandardMaterial({color:0x2a2d33, roughness:.8, side:THREE.DoubleSide});
@@ -1940,6 +2237,11 @@ function buildStatic3D(){
   const floorGeo = new THREE.ShapeGeometry(shape);
   const floor = new THREE.Mesh(floorGeo, new THREE.MeshStandardMaterial({map:woodTexture(), color:0xffffff, roughness:.62, metalness:.02, side:THREE.DoubleSide}));
   floor.rotation.x = Math.PI/2; floor.receiveShadow=true;
+  // 天花板：法线朝上 + BackSide → 只在室内（从下往上看）可见，俯视娃娃屋视角自动穿透
+  const ceil = new THREE.Mesh(new THREE.ShapeGeometry(shape),
+    new THREE.MeshStandardMaterial({color:0xe4e2de, roughness:.98, envMapIntensity:.22, side:THREE.FrontSide}));
+  ceil.rotation.x = Math.PI/2; ceil.position.y = CEIL_H; ceil.receiveShadow = true;
+  scene.add(ceil);
   // ShapeGeometry 在 xy 平面, rotate 后 y->z
   floor.scale.z=1;
   scene.add(floor);
@@ -2056,7 +2358,7 @@ function buildStatic3D(){
   // 卫浴洁具 3D
   {
     const F2=(v)=>v/SC;                       // 图纸px → ft
-    const mPorc = new THREE.MeshStandardMaterial({color:0xf4f2ee, roughness:.25});
+    const mPorc = new THREE.MeshStandardMaterial({color:0xeeece7, roughness:.28, envMapIntensity:.5});
     const mPorcD= new THREE.MeshStandardMaterial({color:0xe2ded6, roughness:.3});
     const mTop  = new THREE.MeshStandardMaterial({color:0xd9d5cd, roughness:.35});
     const mCabF = new THREE.MeshStandardMaterial({color:0x6b5d4e, roughness:.7});
@@ -2108,7 +2410,7 @@ function buildStatic3D(){
     }
   }
   // 门扇 3D：北美常见白色平板内门；入户门深木色
-  const matDoorW = new THREE.MeshStandardMaterial({color:0xf0ede8, roughness:.5});
+  const matDoorW = new THREE.MeshStandardMaterial({color:0xe6e3dd, roughness:.55, envMapIntensity:.35});
   const matDoorWood = new THREE.MeshStandardMaterial({color:0x5d3d24, roughness:.45});
   const matHandle = new THREE.MeshStandardMaterial({color:0xb9bcc2, roughness:.3, metalness:.7});
   const DOOR_H = 6.7;
@@ -2180,7 +2482,7 @@ function buildStatic3D(){
   }
   // 厨房台面+柜
   const matCab = new THREE.MeshStandardMaterial({map:grayOakTexture(), color:0xffffff, roughness:.6});
-  const matTop = new THREE.MeshStandardMaterial({map:quartzTexture(), color:0xffffff, roughness:.22, metalness:.02});
+  const matTop = new THREE.MeshStandardMaterial({map:quartzTexture(), color:0xe9e7e2, roughness:.25, metalness:.02, envMapIntensity:.6});
   const kc = new THREE.Mesh(new THREE.BoxGeometry(9.6, 3.0, 2.41), matCab);
   kc.position.set(26.18, 1.5, 14.33); kc.castShadow=true; scene.add(kc);
   // 冰箱（不锈钢双门）
@@ -2240,6 +2542,123 @@ function buildStatic3D(){
   // 天空盒示意城市光
   three.scene.fog = three.scene.fog || new THREE.Fog(0x181a1e, 60, 160);
 }
+/* =====================================================================
+   照片级渲染：渐进式累积
+   每帧抖动相机子像素(抗锯齿) + 在锥内抖动太阳方向(面光源软阴影)
+   + 抖动天光方向(近似环境遮蔽/漫反射)，多帧平均得到收敛画面
+   ===================================================================== */
+function photoRender(samples){
+  if(!three || three.photo) return;
+  samples = samples || 220;
+  const {renderer, scene, cam, canvas, sun, amb, hemi} = three;
+  const W=canvas.clientWidth||canvas.width, H=canvas.clientHeight||canvas.height;
+  const dpr=Math.min(devicePixelRatio||1, 2);
+  const rw=Math.max(64,Math.round(W*dpr)), rh=Math.max(64,Math.round(H*dpr));
+  // GPU 浮点累积：逐帧渲染到 HDR 目标并叠加，最后一次性做 ACES + sRGB（无逐帧 CPU 回读）
+  const opts={type:THREE.HalfFloatType, format:THREE.RGBAFormat,
+              minFilter:THREE.NearestFilter, magFilter:THREE.NearestFilter, depthBuffer:true};
+  const rt   = new THREE.WebGLRenderTarget(rw,rh,opts);
+  const accRT= new THREE.WebGLRenderTarget(rw,rh,Object.assign({},opts,{depthBuffer:false}));
+  const oCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+  const VS='varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
+  const addMat=new THREE.ShaderMaterial({uniforms:{tSrc:{value:rt.texture}},
+    vertexShader:VS, fragmentShader:'uniform sampler2D tSrc; varying vec2 vUv; void main(){ gl_FragColor=vec4(texture2D(tSrc,vUv).rgb,1.0); }',
+    blending:THREE.AdditiveBlending, depthTest:false, depthWrite:false, transparent:true});
+  const resMat=new THREE.ShaderMaterial({uniforms:{tAcc:{value:accRT.texture}, uN:{value:1}, uExp:{value:renderer.toneMappingExposure}},
+    vertexShader:VS, fragmentShader:`
+      uniform sampler2D tAcc; uniform float uN; uniform float uExp; varying vec2 vUv;
+      vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }
+      void main(){ vec3 c=texture2D(tAcc,vUv).rgb/max(uN,1.0);
+        c=aces(c*uExp);
+        c=mix(c*12.92, 1.055*pow(max(c,vec3(0.0031308)),vec3(1.0/2.4))-0.055, step(vec3(0.0031308),c));
+        gl_FragColor=vec4(c,1.0); }`,
+    depthTest:false, depthWrite:false});
+  const quadScene=new THREE.Scene();
+  const quad=new THREE.Mesh(new THREE.PlaneGeometry(2,2), addMat); quad.frustumCulled=false;
+  quadScene.add(quad);
+  const saved={ sunPos:sun.position.clone(), sunInt:sun.intensity, ambInt:amb.intensity,
+                hemiInt:hemi.intensity, autoClear:renderer.autoClear, pr:renderer.getPixelRatio() };
+  const bar=$('#photoBar'), lbl=$('#photoTxt');
+  bar.style.display='flex';
+  renderer.setRenderTarget(accRT); renderer.setClearColor(0x000000,1); renderer.clear(true,true,true);
+  renderer.setRenderTarget(null);
+  let i=0, cancelled=false;
+  three.photo={cancel(){ cancelled=true; }};
+  const R2=(a,b)=>a+Math.random()*(b-a);
+  const CTRV=new THREE.Vector3(26,0,20);
+  const baseSun=saved.sunInt, baseAmb=saved.ambInt, baseHemi=saved.hemiInt;
+  const t0=performance.now();
+  const step=()=>{
+    if(cancelled){ finish(true); return; }
+    const budget=90;                       // 每帧最多占用 90ms，保持界面可响应
+    const fs=performance.now();
+    while(i<samples && performance.now()-fs<budget){
+      cam.setViewOffset(rw, rh, R2(-0.5,0.5), R2(-0.5,0.5), rw, rh);   // 子像素抖动=抗锯齿
+      if(i%3===2){        // 天光采样：随机半球方向、低强度 → 累积出环境遮蔽与柔和漫射
+        const th=R2(0,Math.PI*2), ph=R2(0.30,1.35);
+        sun.position.set(Math.cos(th)*Math.cos(ph)*55, Math.sin(ph)*55+8, Math.sin(th)*Math.cos(ph)*55).add(CTRV);
+        sun.intensity=baseSun*0.40; amb.intensity=baseAmb*0.30; hemi.intensity=baseHemi*1.6;
+      } else {            // 日光采样：在锥内抖动方向 → 真实半影软阴影
+        const j=0.9;
+        sun.position.set(saved.sunPos.x+R2(-j,j), saved.sunPos.y+R2(-j*0.5,j*0.5), saved.sunPos.z+R2(-j,j));
+        sun.intensity=baseSun*1.08; amb.intensity=baseAmb*0.85; hemi.intensity=baseHemi*0.85;
+      }
+      renderer.setRenderTarget(rt); renderer.clear();
+      renderer.render(scene, cam);                       // 渲到目标 → 线性 HDR（自动跳过色调映射）
+      renderer.setRenderTarget(accRT);
+      renderer.autoClear=false;
+      renderer.render(quadScene, oCam);                  // 叠加
+      renderer.autoClear=saved.autoClear;
+      renderer.setRenderTarget(null);
+      i++;
+    }
+    const el=((performance.now()-t0)/1000).toFixed(1);
+    lbl.textContent='照片级渲染中… '+Math.round(i/samples*100)+'%（'+i+'/'+samples+' 采样 · '+el+'s）';
+    if(i>=samples){ finish(false); return; }
+    requestAnimationFrame(step);
+  };
+  const finish=(aborted)=>{
+    sun.position.copy(saved.sunPos); sun.intensity=saved.sunInt;
+    amb.intensity=saved.ambInt; hemi.intensity=saved.hemiInt;
+    renderer.autoClear=saved.autoClear;
+    cam.clearViewOffset();
+    let out=null;
+    if(!aborted && i>0){
+      // 最终合成必须用同一个 renderer——累积纹理属于它的 WebGL 上下文，跨上下文无法共享
+      resMat.uniforms.uN.value=i;
+      renderer.setPixelRatio(1); renderer.setSize(rw,rh,false);
+      const qs=new THREE.Scene();
+      const q2=new THREE.Mesh(new THREE.PlaneGeometry(2,2), resMat); q2.frustumCulled=false; qs.add(q2);
+      renderer.setRenderTarget(null);
+      renderer.autoClear=true;
+      renderer.render(qs, oCam);
+      const outCv=document.createElement('canvas'); outCv.width=rw; outCv.height=rh;
+      outCv.getContext('2d').drawImage(renderer.domElement, 0, 0, rw, rh);
+      resMat.dispose(); q2.geometry.dispose();
+      out=outCv;
+    }
+    rt.dispose(); accRT.dispose(); addMat.dispose();
+    renderer.setSize(canvas.clientWidth||canvas.width, canvas.clientHeight||canvas.height, false);
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    three.photo=null; bar.style.display='none';
+    if(out) showPhotoResult(out);
+  };
+  requestAnimationFrame(step);
+}
+function showPhotoResult(cv){
+  const box=$('#photoOut'); box.innerHTML='';
+  const img=new Image(); img.src=cv.toDataURL('image/png');
+  img.style.cssText='max-width:100%;max-height:calc(100vh - 120px);box-shadow:0 10px 40px rgba(0,0,0,.6);border-radius:4px';
+  box.appendChild(img);
+  const bar=document.createElement('div');
+  bar.style.cssText='margin-top:10px;display:flex;gap:10px;justify-content:center';
+  const dl=document.createElement('button'); dl.className='btn'; dl.textContent='下载 PNG';
+  dl.onclick=()=>{ const a=document.createElement('a'); a.href=img.src; a.download='照片级渲染.png'; a.click(); };
+  const cl=document.createElement('button'); cl.className='btn'; cl.textContent='关闭';
+  cl.onclick=()=>{ box.parentElement.style.display='none'; };
+  bar.appendChild(dl); bar.appendChild(cl); box.appendChild(bar);
+  $('#photoModal').style.display='flex';
+}
 /* 家具 3D 造型工厂 */
 function furn3D(it, spec){
   const wf=cm2ft(spec.w), df=cm2ft(spec.d), hf=cm2ft(spec.h);
@@ -2256,8 +2675,59 @@ function furn3D(it, spec){
     mm.position.set(x,y+h/2,z); mm.castShadow=true; g.add(mm); return mm;
   };
   const kind=spec.kind||'box';
+  if(isLight(spec)){
+    const cct=itemCCT(it), lm=itemLum(it), lc=cctToRGB(cct);
+    const emis=new THREE.MeshStandardMaterial({color:0xffffff, emissive:lc, emissiveIntensity:1.6, roughness:.4});
+    const trim=new THREE.MeshStandardMaterial({color:new THREE.Color(itemColor(it)), roughness:.45, metalness:.35});
+    const P=(y,dist,ang)=>{ // 统一造光源：吸顶用聚光，吊灯/镜前灯用点光
+      let L;
+      if(ang){ const cd = lm/(2*Math.PI*(1-Math.cos(ang)));   // 聚光：流明→坎德拉
+        L=new THREE.SpotLight(lc, cd, dist, ang, 0.5, 2);
+        L.target.position.set(0,-1,0); g.add(L.target); }
+      else L=new THREE.PointLight(lc, lm/(4*Math.PI), dist, 2);
+      L.position.set(0,y,0);
+      L.castShadow = !!spec.shadow;
+      g.add(L); return L;
+    };
+    if(kind==='downlight'){
+      const r=wf/2;
+      cyl(r, .18, trim, 0, CEIL_H-.18);                       // 外圈
+      const lens=new THREE.Mesh(new THREE.CylinderGeometry(r*0.82,r*0.82,.05,20), emis);
+      lens.position.set(0, CEIL_H-.19, 0); g.add(lens);
+      P(CEIL_H-0.25, 22, 0.62);
+    } else if(kind==='ceilingLight'){
+      const r=wf/2;
+      const dome=new THREE.Mesh(new THREE.SphereGeometry(r,24,12,0,Math.PI*2,Math.PI*0.52,Math.PI*0.48), emis);
+      dome.position.set(0, CEIL_H-hf*0.15, 0); dome.rotation.x=Math.PI; g.add(dome);
+      cyl(r*0.55, .07, trim, 0, CEIL_H-.07);
+      P(CEIL_H-hf*0.5, 26, 0.95);
+    } else if(kind==='vanityLight'){
+      const n = wf>cm2ft(75)?4:3;
+      box(wf, .10, .16, trim, 0, CEIL_H-3.1);                  // 背板（镜上方 ~2.0m）
+      for(let i=0;i<n;i++){
+        const x=-wf/2 + wf*(i+0.5)/n;
+        const gl=new THREE.Mesh(new THREE.SphereGeometry(cm2ft(5),14,10), emis);
+        gl.position.set(x, CEIL_H-3.28, 0.02); g.add(gl);
+      }
+      const L=new THREE.PointLight(lc, lm/(4*Math.PI), 16, 2);
+      L.position.set(0, CEIL_H-3.3, 0.25); g.add(L);
+    } else if(kind==='pendant'){
+      const drop=CEIL_H-cm2ft(165);
+      cyl(.03, drop, trim, 0, CEIL_H-drop);                    // 吊杆
+      const sh=new THREE.Mesh(new THREE.ConeGeometry(wf/2, hf, 24, 1, true), trim);
+      sh.position.set(0, CEIL_H-drop-hf/2, 0); sh.rotation.x=Math.PI; sh.material.side=THREE.DoubleSide; g.add(sh);
+      const bulb=new THREE.Mesh(new THREE.SphereGeometry(cm2ft(4),14,10), emis);
+      bulb.position.set(0, CEIL_H-drop-hf*0.85, 0); g.add(bulb);
+      P(CEIL_H-drop-hf*0.9, 20, 0);
+    }
+    g.position.set(it.x, 0, it.y);
+    g.rotation.y = -(it.rot||0)*Math.PI/180;
+    return g;
+  }
   const matWood = new THREE.MeshStandardMaterial({color:0x8a6b4a, roughness:.7});
   const matMetal = new THREE.MeshStandardMaterial({color:0x888a8f, roughness:.4, metalness:.6});
+  const col2 = spec.color2 ? new THREE.Color(spec.color2) : null;
+  const mat2 = new THREE.MeshStandardMaterial({color:col2||col, roughness:.9});
   const matWhite = new THREE.MeshStandardMaterial({color:0xf0eee8, roughness:.6});
   switch(kind){
     case 'sofa': case 'sofaL': {
@@ -2267,6 +2737,151 @@ function furn3D(it, spec){
       box(.5, 1.35, df, matD, -wf/2+.25,.8, 0);       // 扶手
       box(.5, 1.35, df, matD, wf/2-.25,.8, 0);
       if(kind==='sofaL') box(cm2ft(78), .5, df*.55, mat, wf/2-cm2ft(39), .8, df*.2);
+      break;
+    }
+    case 'tableFold': case 'tableDrawer': {          // IKEA PS 2026 松木桌（含带抽屉款）
+      const pine=new THREE.MeshStandardMaterial({color:0xd9bf94, roughness:.62});
+      const pineD=new THREE.MeshStandardMaterial({color:0xc4a87c, roughness:.68});
+      const tt=cm2ft(3.4);
+      box(wf, tt, df, pine, 0, hf-tt);                                  // 桌面
+      const lg=cm2ft(5);
+      for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])
+        box(lg, hf-tt, lg, pineD, sx*(wf/2-cm2ft(6)), 0, sz*(df/2-cm2ft(6)));
+      box(wf-cm2ft(16), cm2ft(4), cm2ft(3), pineD, 0, hf-tt-cm2ft(9), -df/2+cm2ft(7));  // 横撑
+      box(wf-cm2ft(16), cm2ft(4), cm2ft(3), pineD, 0, hf-tt-cm2ft(9),  df/2-cm2ft(7));
+      if(kind==='tableDrawer'){
+        const dw=Math.min(wf*0.42, cm2ft(46));
+        box(dw, cm2ft(11), cm2ft(2), pine, 0, hf-tt-cm2ft(13), df/2-cm2ft(1));          // 抽屉面板
+        cyl(cm2ft(1.6), cm2ft(3), pineD, 0, hf-tt-cm2ft(8), df/2+cm2ft(1)).rotation.x=Math.PI/2;
+      }
+      break;
+    }
+    case 'crib': {                                    // SNIGLAR 婴儿床：栏杆围合
+      const beech=new THREE.MeshStandardMaterial({color:0xdcc49b, roughness:.6});
+      const wht=new THREE.MeshStandardMaterial({color:0xf2f0ea, roughness:.85});
+      const post=cm2ft(5);
+      for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])
+        box(post, hf, post, beech, sx*(wf/2-post/2), 0, sz*(df/2-post/2));
+      const railY=[cm2ft(30), hf-cm2ft(4)];
+      for(const ry of railY){                                            // 上下横档
+        box(wf-post, cm2ft(4), cm2ft(3), beech, 0, ry, -df/2+post/2);
+        box(wf-post, cm2ft(4), cm2ft(3), beech, 0, ry,  df/2-post/2);
+        box(cm2ft(3), cm2ft(4), df-post, beech, -wf/2+post/2, ry, 0);
+        box(cm2ft(3), cm2ft(4), df-post, beech,  wf/2-post/2, ry, 0);
+      }
+      const nL=Math.round((wf-post)/cm2ft(7));                           // 长边栏杆
+      for(let i=1;i<nL;i++){ const x=-wf/2+post/2 + (wf-post)*i/nL;
+        box(cm2ft(2.4), hf-cm2ft(34), cm2ft(2.4), beech, x, cm2ft(32), -df/2+post/2);
+        box(cm2ft(2.4), hf-cm2ft(34), cm2ft(2.4), beech, x, cm2ft(32),  df/2-post/2); }
+      const nS=Math.round((df-post)/cm2ft(7));                           // 短边栏杆
+      for(let i=1;i<nS;i++){ const z=-df/2+post/2 + (df-post)*i/nS;
+        box(cm2ft(2.4), hf-cm2ft(34), cm2ft(2.4), beech, -wf/2+post/2, cm2ft(32), z);
+        box(cm2ft(2.4), hf-cm2ft(34), cm2ft(2.4), beech,  wf/2-post/2, cm2ft(32), z); }
+      box(wf-post*1.4, cm2ft(10), df-post*1.4, wht, 0, cm2ft(22));       // 床垫
+      break;
+    }
+    case 'playCouch': {                               // Figgy 儿童模块沙发：厚软块
+      const fab=new THREE.MeshStandardMaterial({color:col, roughness:.95});
+      const fabD=new THREE.MeshStandardMaterial({color:col.clone().multiplyScalar(.86), roughness:.95});
+      const seatH=cm2ft(23);
+      box(wf, seatH, df, fab, 0, 0);                                     // 座基（两块拼）
+      box(wf*0.5-cm2ft(1), seatH*1.02, df, fabD, -wf*0.25, 0);
+      box(wf, cm2ft(26), cm2ft(20), fab, 0, seatH, -df/2+cm2ft(10));     // 靠背
+      for(const sx of [-1,1])                                            // 侧枕
+        box(cm2ft(20), cm2ft(20), df-cm2ft(18), fabD, sx*(wf/2-cm2ft(10)), seatH, cm2ft(6));
+      break;
+    }
+    case 'chair': {                                   // 餐椅：钢管框架 + 软包座面靠背
+      const frameM=new THREE.MeshStandardMaterial({color:col, roughness:.45, metalness:.45});
+      const padM=new THREE.MeshStandardMaterial({color:col2||col, roughness:.92});
+      const sh=cm2ft(spec.seatH||46), t=cm2ft(2.2);
+      for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])
+        box(t, sh, t, frameM, sx*(wf/2-t), 0, sz*(df/2-t));
+      for(const sz of [-1,1]) box(wf-t*2, t, t, frameM, 0, sh-cm2ft(12), sz*(df/2-t));   // 横撑
+      box(wf-cm2ft(1), cm2ft(5), df-cm2ft(4), padM, 0, sh-cm2ft(5));                     // 座面
+      const bk=box(wf-cm2ft(3), hf-sh-cm2ft(4), cm2ft(5), padM, 0, sh, -df/2+cm2ft(4));  // 靠背
+      bk.rotation.x=-0.10;
+      box(t, hf-sh, t, frameM, -wf/2+t, sh, -df/2+t); box(t, hf-sh, t, frameM, wf/2-t, sh, -df/2+t);
+      break;
+    }
+    case 'swivelChair': {                             // 旋转椅：星型底座 + 气杆
+      const met=new THREE.MeshStandardMaterial({color:col2||new THREE.Color(0x8e9297), roughness:.35, metalness:.7});
+      const fab=new THREE.MeshStandardMaterial({color:col, roughness:.92});
+      const seatH=cm2ft(spec.seatH||45);
+      for(let i=0;i<5;i++){ const a=i*Math.PI*2/5;
+        const arm=box(wf*0.44, cm2ft(3), cm2ft(4.5), met, Math.cos(a)*wf*0.20, cm2ft(3), Math.sin(a)*wf*0.20);
+        arm.rotation.y=-a;
+        cyl(cm2ft(2.4), cm2ft(5), met, Math.cos(a)*wf*0.40, 0, Math.sin(a)*wf*0.40); }
+      cyl(cm2ft(3), seatH-cm2ft(9), met, 0, cm2ft(5));                   // 气杆
+      cyl(wf*0.44, cm2ft(11), fab, 0, seatH-cm2ft(6));                   // 座面（圆桶形）
+      const bk=box(wf*0.82, cm2ft(38), cm2ft(11), fab, 0, seatH+cm2ft(4), -df/2+cm2ft(11));
+      bk.rotation.x=-0.12;
+      break;
+    }
+    case 'deskSitStand': {                            // IDÅSEN 升降桌：T 形腿 + 方管立柱
+      const blk=new THREE.MeshStandardMaterial({color:col, roughness:.5, metalness:.35});
+      const top=new THREE.MeshStandardMaterial({color:col2||col, roughness:.6});
+      box(wf, cm2ft(2.6), df, top, 0, hf-cm2ft(2.6));
+      for(const sx of [-1,1]){
+        const x=sx*(wf/2-cm2ft(14));
+        box(cm2ft(58), cm2ft(4.5), cm2ft(6.5), blk, x, 0, 0).rotation.y=Math.PI/2;   // 底脚
+        box(cm2ft(9), hf-cm2ft(9), cm2ft(9), blk, x, cm2ft(4.5));                    // 立柱（外）
+        box(cm2ft(6.4), hf-cm2ft(20), cm2ft(6.4), new THREE.MeshStandardMaterial({color:0x3a3d42,roughness:.45,metalness:.4}), x, cm2ft(14));
+        box(cm2ft(46), cm2ft(4.5), cm2ft(6.5), blk, x, hf-cm2ft(7.6), 0).rotation.y=Math.PI/2;
+      }
+      box(wf-cm2ft(40), cm2ft(4), cm2ft(5), blk, 0, hf-cm2ft(9), -df/2+cm2ft(9));    // 横梁
+      break;
+    }
+    case 'cart': {                                    // RÅSKOG 推车：三层 + 脚轮
+      const met=new THREE.MeshStandardMaterial({color:col, roughness:.55, metalness:.25});
+      const blk=new THREE.MeshStandardMaterial({color:col2||new THREE.Color(0x2a2c30), roughness:.6});
+      const tiers=[cm2ft(12), hf*0.52, hf-cm2ft(12)];
+      for(const ty of tiers){
+        box(wf, cm2ft(1.6), df, met, 0, ty);                              // 层板
+        for(const sz of [-1,1]) box(wf, cm2ft(6), cm2ft(1.4), met, 0, ty+cm2ft(1.6), sz*(df/2-cm2ft(.7)));
+        for(const sx of [-1,1]) box(cm2ft(1.4), cm2ft(6), df, met, sx*(wf/2-cm2ft(.7)), ty+cm2ft(1.6), 0);
+      }
+      for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]]){
+        cyl(cm2ft(1.1), hf-cm2ft(6), met, sx*(wf/2-cm2ft(3)), cm2ft(6), sz*(df/2-cm2ft(3)));
+        cyl(cm2ft(2.4), cm2ft(2.2), blk, sx*(wf/2-cm2ft(3)), cm2ft(1.4), sz*(df/2-cm2ft(3))).rotation.z=Math.PI/2;
+      }
+      box(wf-cm2ft(10), cm2ft(1.6), cm2ft(1.6), met, 0, hf-cm2ft(1.6), -df/2+cm2ft(3)); // 推把
+      break;
+    }
+    case 'shelf': {                                   // KALLAX 格子架
+      const bd=new THREE.MeshStandardMaterial({color:col, roughness:.62});
+      const bdI=new THREE.MeshStandardMaterial({color:col.clone().multiplyScalar(.9), roughness:.7});
+      const T=cm2ft(3.9);
+      const cols=Math.max(1,Math.round(wf/cm2ft(39))), rows=Math.max(1,Math.round(hf/cm2ft(39)));
+      box(wf, hf, T, bdI, 0, 0, -df/2+T/2);                               // 背板
+      box(T, hf, df, bd, -wf/2+T/2, 0);  box(T, hf, df, bd, wf/2-T/2, 0); // 侧板
+      box(wf, T, df, bd, 0, 0);          box(wf, T, df, bd, 0, hf-T);     // 顶底
+      for(let c=1;c<cols;c++) box(T, hf-2*T, df, bd, -wf/2 + wf*c/cols, T);
+      for(let r=1;r<rows;r++) box(wf-2*T, T, df, bd, 0, hf*r/rows);
+      break;
+    }
+    case 'bedMetal': {
+      const mFrame=new THREE.MeshStandardMaterial({color:new THREE.Color(itemColor(it)), roughness:.35, metalness:.75});
+      const mMat=new THREE.MeshStandardMaterial({color:0xeceae4, roughness:.85});
+      const mSheet=new THREE.MeshStandardMaterial({color:0xf3f1ec, roughness:.9});
+      const legH=cm2ft(26), matT=cm2ft(24);
+      for(const [sx,sz] of [[-1,-1],[1,-1],[-1,1],[1,1]])          // 四角管腿
+        box(cm2ft(3.6), legH, cm2ft(3.6), mFrame, sx*(wf/2-cm2ft(3)), 0, sz*(df/2-cm2ft(3)));
+      box(wf, cm2ft(4), cm2ft(4), mFrame, 0, legH-cm2ft(4), -df/2+cm2ft(2));   // 边框
+      box(wf, cm2ft(4), cm2ft(4), mFrame, 0, legH-cm2ft(4),  df/2-cm2ft(2));
+      box(cm2ft(4), cm2ft(4), df, mFrame, -wf/2+cm2ft(2), legH-cm2ft(4), 0);
+      box(cm2ft(4), cm2ft(4), df, mFrame,  wf/2-cm2ft(2), legH-cm2ft(4), 0);
+      for(let i=0;i<9;i++)                                          // 排骨架
+        box(wf-cm2ft(6), cm2ft(1.6), cm2ft(6), mFrame, 0, legH-cm2ft(1.6), -df/2+cm2ft(12)+i*(df-cm2ft(24))/8);
+      box(wf-cm2ft(1), matT, df-cm2ft(1), mMat, 0, legH);           // 床垫（与床架同尺寸）
+      box(wf-cm2ft(1), cm2ft(1.2), df*0.62, mSheet, 0, legH+matT, df*0.19);  // 床单
+      const ph=cm2ft(14), pw=(wf-cm2ft(14))/2;
+      for(const sx of [-1,1])                                       // 枕头
+        box(pw, ph, cm2ft(40), mSheet, sx*(pw/2+cm2ft(3)), legH+matT, -df/2+cm2ft(26));
+      // 床头栏杆
+      box(wf, cm2ft(3), cm2ft(3.6), mFrame, 0, legH+cm2ft(38), -df/2+cm2ft(2));
+      for(let i=0;i<7;i++)
+        box(cm2ft(2.2), cm2ft(38), cm2ft(2.2), mFrame, -wf/2+cm2ft(6)+i*(wf-cm2ft(12))/6, legH, -df/2+cm2ft(2));
       break;
     }
     case 'armchair': {
@@ -2375,8 +2990,10 @@ function sync3D(){
   three.furnGroup.traverse(o=>{ if(o.geometry) o.geometry.dispose();
     if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
   three.furnGroup.clear();
+  let lightBudget=6;                       // 只给前几盏灯开阴影，避免帧率崩塌
   for(const it of state.items){
-    const spec=itemSpec(it); if(!spec) continue;
+    let spec=itemSpec(it); if(!spec) continue;
+    if(isLight(spec) && lightBudget>0){ spec=Object.assign({},spec,{shadow:true}); lightBudget--; }
     three.furnGroup.add(furn3D(it,spec));
   }
 }
@@ -2443,6 +3060,8 @@ function updateProps(){
   $('#pFields').style.display='flex';
   $('#pDims').textContent = fmtDims(s);
   if(document.activeElement!==$('#pRot')) $('#pRot').value = it.rot;
+  if(document.activeElement!==$('#pRotSlider')) $('#pRotSlider').value = ((it.rot%360)+360)%360;
+  syncLightUI(it);
   $('#pColor').value = /^#/.test(itemColor(it))? itemColor(it) : '#8a7d6b';
   $('#pPrice').textContent = s.price? `$${s.price}` : '—';
   const a=$('#pUrl'); if(s.url){a.href=s.url; a.textContent='打开产品页 ↗';} else {a.removeAttribute('href'); a.textContent='—';}
@@ -2450,7 +3069,25 @@ function updateProps(){
   $('#pClear').textContent = `位置 (${it.x.toFixed(2)}, ${it.y.toFixed(2)}) ft`;
 }
 $('#pRot').addEventListener('input', e=>{ const it=state.items.find(i=>i.uid===selected); if(it){ it.rot=+e.target.value||0; drawFurniture(); save(); }});
+$('#pRotSlider').addEventListener('input', e=>{ const it=state.items.find(i=>i.uid===selected);
+  if(it){ it.rot=+e.target.value; if(document.activeElement!==$('#pRot')) $('#pRot').value=it.rot; drawFurniture(); save(); }});
 $('#pRot90').onclick=()=>{ const it=state.items.find(i=>i.uid===selected); if(it){ it.rot=(it.rot+90)%360; drawFurniture(); save(); }};
+function syncLightUI(it){
+  const spec=itemSpec(it);
+  const on = !!(spec && isLight(spec));
+  $('#pLightRow').style.display = on?'block':'none';
+  if(!on) return;
+  const cct=itemCCT(it), dim=Math.round((it.dim==null?1:it.dim)*100);
+  if(document.activeElement!==$('#pCCT')) $('#pCCT').value=cct;
+  if(document.activeElement!==$('#pDim')) $('#pDim').value=dim;
+  const nm = cct<2900?'暖光':cct<3800?'暖白':cct<5000?'自然白':'冷白';
+  $('#pCCTv').textContent=cct+'K '+nm;
+  $('#pDimv').textContent=dim+'%';
+}
+$('#pCCT').addEventListener('input', e=>{ const it=state.items.find(i=>i.uid===selected);
+  if(it){ it.cct=+e.target.value; syncLightUI(it); drawFurniture(); if(three&&state.view==='3d') sync3D(); save(); }});
+$('#pDim').addEventListener('input', e=>{ const it=state.items.find(i=>i.uid===selected);
+  if(it){ it.dim=(+e.target.value)/100; syncLightUI(it); if(three&&state.view==='3d') sync3D(); save(); }});
 $('#pColor').addEventListener('input', e=>{ const it=state.items.find(i=>i.uid===selected); if(it){ it.color=e.target.value; drawFurniture(); sync3D(); save(); }});
 $('#pDup').onclick=()=>{ const it=state.items.find(i=>i.uid===selected); if(it){ const n={...it,uid:uidSeq++,x:it.x+1.5,y:it.y+1.5}; state.items.push(n); selected=n.uid; drawFurniture(); save(); }};
 $('#pDel').onclick=()=>{ state.items=state.items.filter(i=>i.uid!==selected); selected=null; drawFurniture(); save(); };
@@ -2479,7 +3116,10 @@ function setView(v){
   $('#hint').innerHTML = v==='2d'
     ? '拖动=移动 · 圆点手柄/R键=旋转（Shift自由角度）· D=复制 · Delete=删除 · 滚轮=缩放 · 拖空白=平移<br>红色描边 = 与其他家具重叠'
     : '左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
-  if(v==='3d'){ if(!three) init3D(); else if(geoDirty3D) buildStatic3D(); geoDirty3D=false; sync3D(); }
+  $('#camSeg').style.display = v==='3d'?'flex':'none';
+  $('#dnSeg').style.display = v==='3d'?'flex':'none';
+  if(v==='3d'){ if(!three) init3D(); else if(geoDirty3D) buildStatic3D(); geoDirty3D=false; sync3D();
+    if(!three.camMode) three.camMode='doll'; }
 }
 /* 单位切换 */
 document.querySelectorAll('#unitSeg button').forEach(b=>{
@@ -2572,6 +3212,78 @@ $('#wRestore').onclick=()=>{ if(confirm('恢复全部内置墙体/结构/门到�
 $('#wDone').onclick=()=>$('#btnWallEdit').onclick();
 /* 预设 */
 $('#btnReset').onclick=()=>{ if(confirm('载入所选方案？当前布局将被覆盖。')) loadPreset($('#presetSel').value); };
+/* 视角模式：娃娃屋 / 室内漫游 */
+const EYE_H = 5.35;              // 人眼高度 ≈163cm
+function setCamMode(m){
+  if(!three) return;
+  three.camMode=m;
+  $('#camDoll').classList.toggle('on', m==='doll');
+  $('#camFP').classList.toggle('on', m==='fp');
+  const {cam, controls} = three;
+  if(m==='fp'){
+    // 站到客厅中央，视线朝西北落地窗
+    const p=three.fpPos || new THREE.Vector3(22, EYE_H, 27);
+    cam.position.copy(p);
+    const dir = three.fpDir || new THREE.Vector3(-0.75,-0.06,-0.66).normalize();
+    controls.target.copy(p).addScaledVector(dir, 6);
+    controls.minDistance=1.5; controls.maxDistance=14;
+    controls.maxPolarAngle=Math.PI*0.86;
+    cam.fov=68; cam.updateProjectionMatrix();
+    $('#hint').innerHTML='室内视角：左键拖动=环视 · <b>W/A/S/D 或方向键=走动</b>（Shift 加速）· 滚轮=前后 · 切回娃娃屋看全局';
+  } else {
+    if(three.camMode!=='doll'){ three.fpPos=cam.position.clone();
+      three.fpDir=controls.target.clone().sub(cam.position).normalize(); }
+    controls.minDistance=0; controls.maxDistance=Infinity;
+    controls.maxPolarAngle=Math.PI/2-0.02;
+    cam.fov=55; cam.updateProjectionMatrix();
+    cam.position.set(28, 42, 50); controls.target.set(26,0,20);
+    $('#hint').innerHTML='左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
+  }
+  controls.update();
+}
+/* 漫游走动 */
+const fpKeys={};
+window.addEventListener('keydown', e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+  if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+  const k=e.key.toLowerCase();
+  if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].includes(k)){ fpKeys[k]=true; e.preventDefault(); }
+});
+window.addEventListener('keyup', e=>{ fpKeys[e.key.toLowerCase()]=false; });
+function fpStep(){
+  if(!three || three.camMode!=='fp') return;
+  const any=['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright'].some(k=>fpKeys[k]);
+  if(!any) return;
+  const {cam, controls}=three;
+  const fwd=controls.target.clone().sub(cam.position); fwd.y=0;
+  if(fwd.lengthSq()<1e-6) return;
+  fwd.normalize();
+  const right=new THREE.Vector3().crossVectors(fwd, new THREE.Vector3(0,1,0)).normalize();
+  const sp=(fpKeys['shift']?0.34:0.14);
+  const mv=new THREE.Vector3();
+  if(fpKeys['w']||fpKeys['arrowup'])    mv.addScaledVector(fwd, sp);
+  if(fpKeys['s']||fpKeys['arrowdown'])  mv.addScaledVector(fwd,-sp);
+  if(fpKeys['a']||fpKeys['arrowleft'])  mv.addScaledVector(right,-sp);
+  if(fpKeys['d']||fpKeys['arrowright']) mv.addScaledVector(right, sp);
+  cam.position.add(mv); controls.target.add(mv);
+  cam.position.y=EYE_H; controls.target.y=Math.min(controls.target.y, EYE_H+2.2);
+  controls.update();
+}
+$('#dnDay').onclick=()=>{ $('#dnDay').blur(); setDayNight(false); };
+$('#dnNight').onclick=()=>{ $('#dnNight').blur(); setDayNight(true); };
+$('#camDoll').onclick=()=>{ $('#camDoll').blur(); setCamMode('doll'); };
+$('#camFP').onclick=()=>{ $('#camFP').blur(); setCamMode('fp'); };
+window.addEventListener('keydown', e=>{
+  if(['INPUT','SELECT','TEXTAREA'].includes(e.target.tagName)) return;
+  if(e.key.toLowerCase()==='v' && state.view==='3d'){ setCamMode(three&&three.camMode==='fp'?'doll':'fp'); }
+});
+/* 照片级渲染 */
+$('#btnPhoto').onclick=()=>{ $('#btnPhoto').blur();
+  if(state.view!=='3d'){ setView('3d'); setTimeout(()=>photoRender(240), 900); }
+  else photoRender(240);
+};
+$('#photoCancel').onclick=()=>{ if(three&&three.photo) three.photo.cancel(); };
+$('#photoModal').onclick=(e)=>{ if(e.target.id==='photoModal') e.target.style.display='none'; };
 /* 底图对照 */
 function setUnderlay(v){
   showUnderlay=v;
