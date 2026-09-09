@@ -1913,7 +1913,39 @@ function wallEditUp(ev){
 }
 svg.addEventListener('pointercancel', ()=>{ drag=null; });
 svg.addEventListener('contextmenu', ev=>{ if(wallEdit.on) ev.preventDefault(); });
+/* 2D 地面双击 → 直接站到该处的室内视角 */
+function fpJumpTo(fx, fz){
+  const pt=[fx,fz];
+  // 朝"背离最近墙"的方向看，保证视线进入房间
+  let bd=1e9, bn=null;
+  for(const sg of effWalls()){
+    const dx=sg.x2-sg.x1, dy=sg.y2-sg.y1, L2=dx*dx+dy*dy; if(L2<1e-9) continue;
+    let t=((pt[0]-sg.x1)*dx+(pt[1]-sg.y1)*dy)/L2; t=Math.max(0,Math.min(1,t));
+    const px=sg.x1+dx*t, py=sg.y1+dy*t, d=Math.hypot(pt[0]-px, pt[1]-py);
+    if(d<bd){ bd=d; bn=[pt[0]-px, pt[1]-py]; }
+  }
+  let dir;
+  if(bn && bd>0.05 && bd<9) dir=new THREE.Vector3(bn[0],0,bn[1]).normalize();
+  else { const c=FLOORPTS.reduce((a,p)=>[a[0]+p[0]/FLOORPTS.length, a[1]+p[1]/FLOORPTS.length],[0,0]);
+    dir=new THREE.Vector3(c[0]-fx, 0, c[1]-fz);
+    dir = dir.lengthSq()<0.04 ? new THREE.Vector3(0,0,-1) : dir.normalize(); }
+  three.fpPos=new THREE.Vector3(fx, EYE_H, fz);
+  three.fpDir=dir.clone();
+  setCamMode('fp');
+  three.cam.position.set(fx, EYE_H, fz);
+  three.controls.target.copy(three.cam.position).addScaledVector(dir, 6);
+  three.controls.update();
+}
 svg.addEventListener('dblclick', ev=>{
+  if(!wallEdit.on){
+    if(state.view!=='2d') return;
+    if(ev.target.closest('.furn')) return;                 // 双击家具不跳转
+    const p=svgPoint(ev);
+    ev.preventDefault();
+    if(!three){ setView('3d'); setTimeout(()=>fpJumpTo(p[0],p[1]), 700); }
+    else { setView('3d'); fpJumpTo(p[0],p[1]); }
+    return;
+  }
   if(!wallEdit.on) return;
   ev.preventDefault();
   if(wallEdit.tool==='wall') applyDrawWallChain();
@@ -2238,6 +2270,30 @@ function buildEnvironment(){
   applyBackdrop();
   pm.dispose();
 }
+/* 照明方案：娃娃屋=均匀泛光（看清造型与贴图，不受灯具影响）；室内=真实灯光 */
+function applyLightMode(){
+  if(!three) return;
+  const fp = three.camMode==='fp', night = !!three.night;
+  const {sun, amb, hemi, renderer} = three;
+  if(!fp){                                   // 娃娃屋：柔和均匀，弱方向光只用来交代体块
+    sun.color.set(0xfff4e6); sun.intensity=0.55; sun.position.copy(three.sunHome);
+    amb.color.set(0xffffff); amb.intensity=0.95;
+    hemi.color.set(0xdfe9f7); hemi.groundColor.set(0x9a9184); hemi.intensity=0.85;
+    renderer.toneMappingExposure=0.98;
+  } else if(night){
+    sun.color.set(0x93a9d4); sun.intensity=0.16; sun.position.set(30,26,-34);
+    amb.color.set(0x2c3550); amb.intensity=0.10;
+    hemi.color.set(0x3a4d78); hemi.groundColor.set(0x14161c); hemi.intensity=0.16;
+    renderer.toneMappingExposure=1.25;
+  } else {
+    sun.color.set(0xffeeda); sun.intensity=1.85; sun.position.copy(three.sunHome);
+    amb.color.set(0xf2f4f8); amb.intensity=0.28;
+    hemi.color.set(0xbfd4ff); hemi.groundColor.set(0x3a3226); hemi.intensity=0.55;
+    renderer.toneMappingExposure=0.92;
+  }
+  const fix = fp ? 1 : 0.06;                 // 娃娃屋里灯具几乎不参与照明，避免局部过曝
+  three.furnGroup.traverse(o=>{ if(o.isLight && o.userData.baseI!=null) o.intensity=o.userData.baseI*fix; });
+}
 /* 窗外景只在室内视角渲染；娃娃屋视角保持干净背景 */
 function applyBackdrop(){
   if(!three) return;
@@ -2254,20 +2310,7 @@ function applyBackdrop(){
 function setDayNight(night){
   if(!three) return;
   three.night=night;
-  const {sun,amb,hemi,renderer}=three;
-  if(night){
-    sun.color.set(0x93a9d4); sun.intensity=0.16;
-    sun.position.set(30,26,-34);
-    amb.color.set(0x2c3550); amb.intensity=0.10;
-    hemi.color.set(0x3a4d78); hemi.groundColor.set(0x14161c); hemi.intensity=0.16;
-    renderer.toneMappingExposure=1.25;
-  } else {
-    sun.color.set(0xffeeda); sun.intensity=1.85;
-    sun.position.copy(three.sunHome);
-    amb.color.set(0xf2f4f8); amb.intensity=0.28;
-    hemi.color.set(0xbfd4ff); hemi.groundColor.set(0x3a3226); hemi.intensity=0.55;
-    renderer.toneMappingExposure=0.92;
-  }
+  applyLightMode();
   buildEnvironment();
   $('#dnDay').classList.toggle('on', !night);
   $('#dnNight').classList.toggle('on', night);
@@ -2895,13 +2938,14 @@ function furn3D(it, spec){
       // 家用灯具是漫射光源，不是舞台聚光：主体一律用点光（全向泛光），
       // 只有嵌入式筒灯额外叠一盏"宽角+高半影"的下照光模拟灯杯，且仍保留大量泛光。
       const L=new THREE.PointLight(lc, lm*0.72/(4*Math.PI), dist, 2);
-      L.position.set(0,y,0); L.castShadow=!!spec.shadow; g.add(L);
+      L.position.set(0,y,0); L.castShadow=!!spec.shadow;
+      L.userData.baseI=L.intensity; g.add(L);
       if(ang){
         const wide=Math.min(1.30, ang);                    // ≥75°，接近家用筒灯的宽配光
         const cd=lm*0.28/(2*Math.PI*(1-Math.cos(wide)));
         const S2=new THREE.SpotLight(lc, cd, dist, wide, 0.92, 2);   // penumbra .92 = 边缘几乎无界
         S2.position.set(0,y,0); S2.target.position.set(0,-1,0);
-        S2.castShadow=false; g.add(S2.target); g.add(S2);
+        S2.castShadow=false; S2.userData.baseI=S2.intensity; g.add(S2.target); g.add(S2);
       }
       return L;
     };
@@ -2926,7 +2970,7 @@ function furn3D(it, spec){
         gl.position.set(x, CEIL_H-3.28, 0.02); g.add(gl);
       }
       const L=new THREE.PointLight(lc, lm/(4*Math.PI), 16, 2);
-      L.position.set(0, CEIL_H-3.3, 0.25); g.add(L);
+      L.position.set(0, CEIL_H-3.3, 0.25); L.userData.baseI=L.intensity; g.add(L);
     } else if(kind==='pendant'){
       const drop=CEIL_H-cm2ft(165);
       cyl(.03, drop, trim, 0, CEIL_H-drop);                    // 吊杆
@@ -3281,6 +3325,7 @@ function sync3D(){
     if(isLight(spec) && lightBudget>0){ spec=Object.assign({},spec,{shadow:true}); lightBudget--; }
     three.furnGroup.add(furn3D(it,spec));
   }
+  applyLightMode();
 }
 
 /* =====================================================================
@@ -3400,7 +3445,7 @@ function setView(v){
   $('#svg2d').style.display = v==='2d'?'block':'none';
   $('#c3d').style.display = v==='3d'?'block':'none';
   $('#hint').innerHTML = v==='2d'
-    ? '拖动=移动 · 圆点手柄/R键=旋转（Shift自由角度）· D=复制 · Delete=删除 · 滚轮=缩放 · 拖空白=平移<br>红色描边 = 与其他家具重叠'
+    ? '拖动=移动 · 圆点手柄/R键=旋转（Shift自由/[ ]微调）· D=复制 · Delete=删除 · 滚轮=缩放 · 拖空白=平移<br><b>在地面双击 = 站到该处进入室内视角</b> · 红色描边 = 与其他家具重叠'
     : '左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
   $('#camSeg').style.display = v==='3d'?'flex':'none';
   $('#dnSeg').style.display = v==='3d'?'flex':'none';
@@ -3525,7 +3570,7 @@ function setCamMode(m){
     cam.position.set(28, 42, 50); controls.target.set(26,0,20);
     $('#hint').innerHTML='左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
   }
-  applyBackdrop();
+  applyBackdrop(); applyLightMode();
   controls.update();
 }
 /* 漫游走动 */
