@@ -208,7 +208,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.8</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.9</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -3958,10 +3958,17 @@ function ptRender(samples, ptOpts){
     const oCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     const VS3 = 'out vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
 
+    /* 环境光填充：光栅视图靠 amb+hemi 假装全局光照，但路径追踪是**真的**在算 GI，
+       原样叠上去等于把房间塞进一个发光白球里——对比度全被抹平，
+       窗外城市糊成一片灰，白色家具（KALLAX 那种）直接和墙融在一起看不见。
+       只保留很小一份当天光残留，主光照交给真正的环境贴图和太阳。 */
+    const AMB_FILL = 0.32;                      // 实测：1.0 冲平对比度，0.12 又偏暗
     const hemi = three.hemi, amb = three.amb;
     const ambC = new THREE.Color(amb.color).multiplyScalar(amb.intensity);
-    const top = new THREE.Color(hemi.color).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
-    const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
+    const top = new THREE.Color(hemi.color).multiplyScalar(hemi.intensity).add(ambC)
+                  .multiplyScalar(AMB_FILL/Math.PI);
+    const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC)
+                  .multiplyScalar(AMB_FILL/Math.PI);
     const pano = three.panorama || null;
 
     const uni = {
@@ -3973,7 +3980,7 @@ function ptRender(samples, ptOpts){
       uTanHalf:{value:1}, uAspect:{value:rw/rh},
       uFrame:{value:0}, uBounces:{value:ptOpts.bounces||Q.bounces}, uNLight:{value:PT.nLight},
       uHasEnv:{value:pano?1:0}, uEnvSRGB:{value:(pano&&pano.encoding===THREE.sRGBEncoding)?1:0},
-      uEnvInt:{value:0.42}, uClamp:{value:24.0}, uMode:{value:0},
+      uEnvInt:{value:1.0}, uClamp:{value:24.0}, uMode:{value:0},   // 环境贴图给足：日光本来就该从窗户进来
       uSkyTop:{value:new THREE.Vector3(top.r,top.g,top.b)},
       uSkyBot:{value:new THREE.Vector3(bot.r,bot.g,bot.b)}
     };
@@ -8900,6 +8907,41 @@ async function runPT(){
         '8spp '+(f8*100).toFixed(2)+'% → 32spp '+(f32*100).toFixed(2)
         +'%（NaN 不会随采样衰减）');
     } else T('pt-spikes-are-fireflies-not-nan', false, '高采样对照渲染失败');
+
+    /* KALLAX 这类白色格架在光追下曾经「快隐身」：把光栅用的 amb+hemi 假环境光
+       原样叠到真 GI 上，等于把房间塞进发光白球，对比度被抹平，白家具和白墙糊成一片。
+       这里用「结构对比度」守住——格子的明暗层次必须还在。 */
+    const kal = CATALOG.find(c=>c.id==='kallax-a-0');
+    if(kal){
+      state.items=[{uid:9001, ref:kal.id, x:22, y:21.4, rot:0},
+                   {uid:9002, ref:'dl-6', x:22, y:23.5, rot:0}];
+      refresh(); await wait(1200);
+      three.cam.position.set(22, EYE_H, 26); fpYaw=Math.PI; fpPitch=-0.02;
+      if(typeof fpAim==='function') fpAim();
+      await wait(400);
+      const kr = await new Promise(r=>{
+        ptRender(24, {maxPx:140*100, bounces:4, denoise:false, onDone:(cv,spp)=>r({cv,spp})});
+        setTimeout(()=>r(null), 300000);
+      });
+      if(kr && kr.cv){
+        const g6=kr.cv.getContext('2d'), w6=kr.cv.width, h6=kr.cv.height;
+        const d6=g6.getImageData(0,0,w6,h6).data;
+        // 只看画面中段（KALLAX 所在的横条），算亮度标准差 = 结构可辨识度
+        let sum=0, sum2=0, n=0;
+        for(let y=Math.floor(h6*0.35); y<Math.floor(h6*0.85); y++)
+          for(let x=Math.floor(w6*0.25); x<Math.floor(w6*0.75); x++){
+            const i=(y*w6+x)*4, v=d6[i]*0.299+d6[i+1]*0.587+d6[i+2]*0.114;
+            sum+=v; sum2+=v*v; n++; }
+        const mean=sum/n, sd=Math.sqrt(Math.max(0, sum2/n - mean*mean));
+        T('pt-kallax-visible', sd > 18 && mean > 25 && mean < 235,
+          '格架区域 亮度均值 '+mean.toFixed(1)+' 标准差 '+sd.toFixed(1)
+          +'（标准差太小=糊成一片，均值贴边=过曝或全黑）');
+      } else T('pt-kallax-visible', false, '渲染没返回');
+      state.items=[]; refresh();
+    }
+    // 环境光填充不能压过真 GI：光追里的天光残留应该远小于光栅的 amb+hemi
+    T('pt-ambient-fill-modest', /AMB_FILL\s*=\s*0\.[0-4]/.test(ptRender.toString()),
+      '环境光填充系数保持在 0.0~0.4');
 
     /* ===== 分块自适应：单个 draw 必须短于看门狗阈值（v3.7） =====
        真实 GPU 计时在 headless 下测不到（虚拟时间冻结 performance.now），

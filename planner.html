@@ -208,7 +208,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.8</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.9</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -3958,10 +3958,17 @@ function ptRender(samples, ptOpts){
     const oCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
     const VS3 = 'out vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
 
+    /* 环境光填充：光栅视图靠 amb+hemi 假装全局光照，但路径追踪是**真的**在算 GI，
+       原样叠上去等于把房间塞进一个发光白球里——对比度全被抹平，
+       窗外城市糊成一片灰，白色家具（KALLAX 那种）直接和墙融在一起看不见。
+       只保留很小一份当天光残留，主光照交给真正的环境贴图和太阳。 */
+    const AMB_FILL = 0.32;                      // 实测：1.0 冲平对比度，0.12 又偏暗
     const hemi = three.hemi, amb = three.amb;
     const ambC = new THREE.Color(amb.color).multiplyScalar(amb.intensity);
-    const top = new THREE.Color(hemi.color).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
-    const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
+    const top = new THREE.Color(hemi.color).multiplyScalar(hemi.intensity).add(ambC)
+                  .multiplyScalar(AMB_FILL/Math.PI);
+    const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC)
+                  .multiplyScalar(AMB_FILL/Math.PI);
     const pano = three.panorama || null;
 
     const uni = {
@@ -3973,7 +3980,7 @@ function ptRender(samples, ptOpts){
       uTanHalf:{value:1}, uAspect:{value:rw/rh},
       uFrame:{value:0}, uBounces:{value:ptOpts.bounces||Q.bounces}, uNLight:{value:PT.nLight},
       uHasEnv:{value:pano?1:0}, uEnvSRGB:{value:(pano&&pano.encoding===THREE.sRGBEncoding)?1:0},
-      uEnvInt:{value:0.42}, uClamp:{value:24.0}, uMode:{value:0},
+      uEnvInt:{value:1.0}, uClamp:{value:24.0}, uMode:{value:0},   // 环境贴图给足：日光本来就该从窗户进来
       uSkyTop:{value:new THREE.Vector3(top.r,top.g,top.b)},
       uSkyBot:{value:new THREE.Vector3(bot.r,bot.g,bot.b)}
     };
