@@ -80,7 +80,9 @@
     display:flex; align-items:center; gap:8px; padding:6px 8px; border-radius:8px; cursor:pointer;
   }
   .catItem:hover{background:var(--panel2);}
-  .catItem .sw{width:26px; height:26px; border-radius:6px; flex:none; border:1px solid rgba(255,255,255,.15);}
+  .catItem .sw{width:52px; height:42px; border-radius:6px; flex:none; border:1px solid rgba(255,255,255,.13);
+    background-size:contain; background-repeat:no-repeat; background-position:center;}
+  .catItem .sw.has{border-color:rgba(255,255,255,.09); background-color:rgba(255,255,255,.035);}
   .catItem .nm{font-size:12.5px; line-height:1.25;}
   .catItem .nm small{display:block; color:var(--muted); font-size:11px;}
   .catItem .price{margin-left:auto; font-size:11px; color:var(--accent2); flex:none;}
@@ -139,7 +141,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v3.0</small></div>
+  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v3.1</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btn3d">3D 渲染</button>
@@ -151,6 +153,15 @@
   <div class="seg" id="lampSeg" style="display:none">
     <button id="lampOn" class="on">灯 开</button>
     <button id="lampOff">灯 关</button>
+  </div>
+  <div class="seg" id="ptSeg" style="display:none" title="光追质量：采样数 / 弹射次数 / 分辨率">
+    <button data-q="draft">草稿</button>
+    <button data-q="normal" class="on">标准</button>
+    <button data-q="fine">精细</button>
+  </div>
+  <div class="seg" id="ptDnSeg" style="display:none" title="À-Trous 边缘保持降噪：按法线/深度/颜色差滤波，贴图细节不受影响">
+    <button id="ptDnOn" class="on">降噪 开</button>
+    <button id="ptDnOff">降噪 关</button>
   </div>
   <div class="seg" id="dnSeg" style="display:none">
     <button id="dnDay" class="on">白天</button>
@@ -482,6 +493,19 @@ const CATALOG = [
  {id:'wk-mat-s-1', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 S 200×120 · 石灰色', w:200,d:120,h:4, price:269, color:'#9E9E9E', color2:'#868686', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
  {id:'wk-mat-l-0', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 L 240×140 · 沙色', w:240,d:140,h:4, price:299, color:'#D4C4A8', color2:'#BCAA8C', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
  {id:'wk-mat-l-1', cat:'地毯 / 爬行垫', name:'Wunderkids 折叠爬行垫 L 240×140 · 石灰色', w:240,d:140,h:4, price:299, color:'#9E9E9E', color2:'#868686', model:'wk-mat', kind:'playMat', url:'https://wunderkids.com/products/deluxe-folder'},
+  {id:'pg_chestnut', cat:'儿童 / 爬爬架', name:'Avenlur Chestnut 8合1 爬爬架 L', w:225.6,d:145.5,h:148.8, price:1029, color:'#d8bd94', kind:'climber', model:'chestnut', wood:'pine', url:'https://avenlur.ca/products/chestnut-8-in-1-indoor-jungle-gym', note:'松木·可折叠·滑梯/攀岩/猴子架/秋千/吊环/绳梯·承重50kg/童·加元'},
+  {id:'pg_chestnut_c', cat:'儿童 / 爬爬架', name:'Avenlur Chestnut 8合1 爬爬架 L · 彩色横杆', w:225.6,d:145.5,h:148.8, price:1029, color:'#d8bd94', color2:'#6fb7c9', kind:'climber', model:'chestnut', wood:'pine', url:'https://avenlur.ca/products/chestnut-8-in-1-indoor-jungle-gym', note:'同款彩色横杆版·加元'},
+  {id:'pg_chestnut_m', cat:'儿童 / 爬爬架', name:'Avenlur Chestnut 8合1 爬爬架 M', w:178.6,d:123.7,h:116.8, price:929, color:'#d8bd94', kind:'climber', model:'chestnut', wood:'pine', url:'https://avenlur.ca/products/chestnut-8-in-1-indoor-jungle-gym', note:'中号·适合层高较低的房间·加元'},
+  {id:'pg_hazel', cat:'儿童 / 爬爬架', name:'Avenlur Hazel 攀爬三角+滑梯+拱桥', w:205,d:68,h:68, price:323, color:'#dcc39a', kind:'climber', model:'hazel', wood:'pine', url:'https://avenlur.ca/products/hazel-foldable-pikler-triangle-ladder', note:'FSC木·可折叠·斜坡可翻面（滑梯/攀爬）·拱桥可当摇摇板·加元'},
+  {id:'pg_hazel_c', cat:'儿童 / 爬爬架', name:'Avenlur Hazel 三角套装 · 彩色横杆', w:205,d:68,h:68, price:323, color:'#dcc39a', color2:'#e8a04a', kind:'climber', model:'hazel', wood:'pine', url:'https://avenlur.ca/products/hazel-foldable-pikler-triangle-ladder', note:'彩色横杆版·加元'},
+  {id:'pg_hazel_w', cat:'儿童 / 爬爬架', name:'Avenlur Hazel 三角套装 · 白色', w:205,d:68,h:68, price:323, color:'#eeece7', kind:'climber', model:'hazel', wood:'birch', url:'https://avenlur.ca/products/hazel-foldable-pikler-triangle-ladder', note:'白色版·加元'},
+  {id:'pg_magnolia', cat:'儿童 / 爬爬架', name:'Avenlur Magnolia 7合1 游乐架 L', w:145.5,d:121.6,h:142.8, price:808, color:'#dcc59d', kind:'climber', model:'magnolia', wood:'pine', url:'https://avenlur.ca/products/magnolia-real-wood-playset', note:'新西兰松·滑梯/猴子架/绳梯/绳网/攀岩墙/木梯/秋千·加元'},
+  {id:'pg_magnolia_c', cat:'儿童 / 爬爬架', name:'Avenlur Magnolia 7合1 游乐架 L · 彩色横杆', w:145.5,d:121.6,h:142.8, price:808, color:'#dcc59d', color2:'#5aa9b8', kind:'climber', model:'magnolia', wood:'pine', url:'https://avenlur.ca/products/magnolia-real-wood-playset', note:'彩色横杆版·加元'},
+  {id:'pg_magnolia_m', cat:'儿童 / 爬爬架', name:'Avenlur Magnolia 7合1 游乐架 M', w:131.1,d:109.2,h:119.9, price:728, color:'#dcc59d', kind:'climber', model:'magnolia', wood:'pine', url:'https://avenlur.ca/products/magnolia-real-wood-playset', note:'中号·加元'},
+  {id:'pg_sweetgum', cat:'儿童 / 爬爬架', name:'Avenlur Sweetgum 8合1 感统攀爬架', w:180,d:177,h:160, price:1618, color:'#dfc7a0', kind:'climber', model:'sweetgum', wood:'pine', url:'https://avenlur.ca/products/avenlur-sweetgum-indoor-sensory-climber-montessori-play-gym-with-slide-swing-rock-wall-and-rope-ladder-small-copy', note:'FSC木·鸟巢秋千/绳墙/彩环/圆木斜坡/绳梯·平台高63cm·加元'},
+  {id:'pg_qtower', cat:'儿童 / 爬爬架', name:'QUADRO A0140 大塔 + 超长滑梯', w:188,d:125,h:165, price:0, color:'#d8281f', kind:'climber', model:'qtower', url:'https://quadroworld.com/en/designs/a0140/big-tower-with-mega-slide', note:'管件系统·需 1×Evolution 套件·2岁起·组装约4小时'},
+  {id:'pg_qcraft', cat:'儿童 / 爬爬架', name:'QUADRO A0294 儿童手工大桌', w:165,d:125,h:98, price:0, color:'#00963f', kind:'climber', model:'qcraft', url:'https://quadroworld.com/en/designs/a0294/large-craft-table-for-kids-with-big-play-area-for-modeling-and-painting', note:'管件系统·需 1×Evolution 套件·1岁起·组装约3小时'},
+  {id:'pg_qriser', cat:'儿童 / 爬爬架', name:'QUADRO A0164 厨房学习塔', w:65,d:45,h:85, price:0, color:'#0058a6', kind:'climber', model:'qriser', url:'https://quadroworld.com/en/designs/a0164/countertop-riser-for-kitchen', note:'管件系统·需 1×Beginner 套件·1岁半起·组装约1小时'},
  {id:'ps2026-tbl-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 折叠桌 · 松木/透明漆', w:156,d:75,h:73, price:299, color:'#DDB584', color2:'#C4262E', model:'ps2026-tbl', wood:'pine', kind:'tableFold', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-folding-pine-clear-lacquered-00617861/', note:'设计师 Ola Wihlborg，实木交叉腿（cross-leg）折叠餐桌，坐 4 人'},
  {id:'ps2026-tbl-drw-0', cat:'餐桌椅 / 吧凳', name:'PS 2026 带抽屉桌 · 松木 清漆', w:70,d:70,h:75, price:249, color:'#D6AE7B', color2:'#1C63B8', model:'ps2026-tbl-drw', wood:'pine', kind:'tableDrawer', url:'https://www.ikea.com/ca/en/p/ikea-ps-2026-table-with-drawer-pine-clear-lacquered-40617878/', note:'IKEA PS 2026 系列双人方桌（设计师 Ola Wihlborg，货号 406.178.78）'},
  {id:'vihals-chair-0', cat:'餐桌椅 / 吧凳', name:'VIHALS 餐椅 · 绿色 / Tibbleby 灰绿色', w:49,d:55,h:81, price:55, color:'#929683', color2:'#78846C', seatH:48, model:'vihals-chair', kind:'chair', url:'https://www.ikea.com/ca/en/p/vihals-chair-green-tibbleby-gray-green-90595124/', note:'【颜色字段约定】hex = 钢管框架/椅腿的粉末喷涂色（IKEA 型号名里的第一个颜色），hex2 = 座面与靠背软包织'},
@@ -585,8 +609,8 @@ const CATALOG = [
  {id:'hemnes_d8', cat:'收纳 / 电视柜', name:'HEMNES 八屉柜 160', w:160,d:50,h:96, price:449.99, color:'#e8e4dc', kind:'dresser', url:'https://www.ikea.com/us/en/p/hemnes-8-drawer-dresser-white-stain-10576191/'},
  {id:'hauga6', cat:'收纳 / 电视柜', name:'HAUGA 六屉柜 138', w:138,d:46,h:84, price:279.99, color:'#f0ece4', kind:'dresser', url:'https://www.ikea.com/us/en/p/hauga-6-drawer-dresser-white-60581538/'},
  {id:'billy', cat:'收纳 / 电视柜', name:'BILLY 书柜 80', w:80,d:28,h:202, price:79, color:'#e8e4dc', kind:'bookcase', url:'https://www.ikea.com/us/en/p/billy-bookcase-white-20522046/'},
- {id:'kallax24', cat:'收纳 / 电视柜', name:'KALLAX 2×4 格架', w:76.5,d:39,h:146.5, price:79.99, color:'#e8e4dc', kind:'bookcase', url:'https://www.ikea.com/us/en/p/kallax-shelf-unit-white-20631663/', note:'可横放当电视柜'},
- {id:'vittsjo_sh', cat:'收纳 / 电视柜', name:'VITTSJÖ 玻璃格架 100', w:100,d:36,h:175, price:129, color:'#3a3d43', kind:'bookcase', url:'https://www.ikea.com/us/en/p/vittsjoe-shelf-unit-black-brown-glass-20213312/'},
+ {id:'kallax24', cat:'收纳 / 电视柜', name:'KALLAX 2×4 格架', w:76.5,d:39,h:146.5, price:79.99, color:'#e8e4dc', kind:'shelf', url:'https://www.ikea.com/us/en/p/kallax-shelf-unit-white-20631663/', note:'可横放当电视柜'},
+ {id:'vittsjo_sh', cat:'收纳 / 电视柜', name:'VITTSJÖ 玻璃格架 100', w:100,d:36,h:175, price:129, color:'#3a3d43', kind:'bookcase', glassShelf:true, url:'https://www.ikea.com/us/en/p/vittsjoe-shelf-unit-black-brown-glass-20213312/'},
  {id:'stall', cat:'收纳 / 电视柜', name:'STÄLL 鞋柜(超薄17)', w:96,d:17,h:90, price:149.99, color:'#e8e4dc', kind:'shoeCab', url:'https://www.ikea.com/us/en/p/staell-shoe-cabinet-with-4-compartments-white-60530266/'},
  {id:'trones', cat:'收纳 / 电视柜', name:'TRONES 鞋盒×2(壁挂)', w:52,d:18,h:39, price:39.99, color:'#e8e4dc', kind:'shoeCab', url:'https://www.ikea.com/us/en/p/trones-shoe-storage-cabinet-white-00397307/', note:'两个/组，可叠'},
  // —— 书桌 / 办公椅 ——
@@ -1268,6 +1292,15 @@ function furnShape(it, spec){
     R(-Math.min(wf-.3,4.8)/2, -df/2-.12, Math.min(wf-.3,4.8), .14, 0, '#111');  // 电视(壁挂示意在柜后)
   } else if(kind==='desk'){
     R(-wf/2+.15, -df/2+.15, 1.5, df-.5, 2, dk); // 显示器示意
+  } else if(kind==='climber'){                                  // 爬爬架：外框 + 横档示意
+    R(-wf/2+.08,-df/2+.08, wf-.16, df-.16, 3, 'rgba(0,0,0,.10)');
+    const nR=Math.max(3, Math.min(9, Math.round(wf/1.3)));
+    for(let i=1;i<nR;i++){
+      const x=(-wf/2 + wf*i/nR)*S;
+      el('line',{x1:x,y1:-dp/2+4,x2:x,y2:dp/2-4,stroke:'rgba(0,0,0,.28)','stroke-width':1.1},body);
+    }
+    el('line',{x1:-wp/2+3,y1:-dp/2+3,x2:wp/2-3,y2:dp/2-3,stroke:'rgba(0,0,0,.20)','stroke-width':1},body);
+    el('line',{x1:-wp/2+3,y1:dp/2-3,x2:wp/2-3,y2:-dp/2+3,stroke:'rgba(0,0,0,.20)','stroke-width':1},body);
   } else if(kind==='dresser'||kind==='nightstand'||kind==='bookcase'||kind==='shoeCab'){
     el('line',{x1:-wp/2+3,y1:0,x2:wp/2-3,y2:0,stroke:dk,'stroke-width':1},body);
   } else if(kind==='lamp'){
@@ -3374,8 +3407,8 @@ uniform vec2  uRes;
 uniform vec3  uCamPos;
 uniform mat4  uCamMat;
 uniform float uTanHalf, uAspect;
-uniform int   uFrame, uBounces, uNLight, uHasEnv, uEnvSRGB;
-uniform float uEnvInt;
+uniform int   uFrame, uBounces, uNLight, uHasEnv, uEnvSRGB, uMode;
+uniform float uEnvInt, uClamp;
 uniform vec3  uSkyTop, uSkyBot;
 const float PI = 3.14159265359;
 const int   TW = ${PT_W};
@@ -3397,7 +3430,6 @@ vec3 octDec(vec2 e){
 }
 vec3 srgb2lin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(vec3(0.04045), c)); }
 
-/* --- 求交 --- */
 struct Hit { float t; int tri; vec2 bary; };
 
 bool triHit(vec3 ro, vec3 rd, int tri, inout float tBest, out vec2 bary){
@@ -3424,6 +3456,8 @@ float boxHit(vec3 ro, vec3 invD, vec3 bmin, vec3 bmax, float tMax){
   float b = min(min(tf.x,tf.y),tf.z);
   return (a <= b && b > 0.0 && a < tMax) ? max(a, 0.0) : -1.0;
 }
+int matOf(int tri){ return int(fx(tPos, tri*3).w + 0.5); }
+
 bool trace(vec3 ro, vec3 rd, float tMax, out Hit h){
   vec3 invD = vec3(1.0)/rd;          // 除零得 ±Inf，slab 判定仍然正确
   h.t = tMax; h.tri = -1; h.bary = vec2(0.0);
@@ -3456,27 +3490,46 @@ bool trace(vec3 ro, vec3 rd, float tMax, out Hit h){
   }
   return h.tri >= 0;
 }
-int matOf(int tri){ return int(fx(tPos, tri*3).w + 0.5); }
 
-/* 阴影光线：遇到玻璃继续走并衰减 */
+/* 阴影光线：any-hit 遍历，撞到不透明面立刻返回，遇玻璃衰减后继续。
+   （原先是「找最近交点」循环 4 次，等于跑 4 遍完整遍历，非常慢）*/
 vec3 visibility(vec3 ro, vec3 rd, float tMax){
   vec3 tr = vec3(1.0);
-  for(int i = 0; i < 4; i++){
-    Hit h;
-    if(!trace(ro, rd, tMax, h)) return tr;
-    int mi = matOf(h.tri);
-    vec4 m0 = fx(tMat, mi*4+0);
-    vec4 m2 = fx(tMat, mi*4+2);
-    if(m2.w < 0.5) return vec3(0.0);
-    tr *= mix(vec3(1.0), m0.rgb, 0.6) * m2.w;
-    float adv = h.t + 1e-3;
-    ro += rd*adv; tMax -= adv;
-    if(tMax <= 0.0) break;
+  vec3 invD = vec3(1.0)/rd;
+  int stack[48]; int sp = 0; int node = 0;
+  for(int guard = 0; guard < 8192; guard++){
+    vec4 n0 = fx(tBVH, node*2+0);
+    vec4 n1 = fx(tBVH, node*2+1);
+    int cnt = int(n1.w);
+    if(cnt > 0){
+      int first = int(n0.w);
+      for(int k = 0; k < cnt; k++){
+        float tb = tMax; vec2 bc;
+        if(triHit(ro, rd, first+k, tb, bc)){
+          int mi = matOf(first+k);
+          vec4 m2 = fx(tMat, mi*4+2);
+          if(m2.w < 0.5) return vec3(0.0);                 // 不透明 → 全遮挡
+          vec4 m0 = fx(tMat, mi*4+0);
+          tr *= mix(vec3(1.0), m0.rgb, 0.6) * m2.w;
+          if(max(tr.r, max(tr.g, tr.b)) < 0.02) return vec3(0.0);
+        }
+      }
+    } else {
+      int l = int(n0.w), r = l+1;
+      vec4 l0 = fx(tBVH, l*2+0), l1 = fx(tBVH, l*2+1);
+      vec4 r0 = fx(tBVH, r*2+0), r1 = fx(tBVH, r*2+1);
+      float dl = boxHit(ro, invD, l0.xyz, l1.xyz, tMax);
+      float dr = boxHit(ro, invD, r0.xyz, r1.xyz, tMax);
+      if(dl >= 0.0 && dr >= 0.0){ if(sp < 48){ stack[sp] = r; sp++; } node = l; continue; }
+      if(dl >= 0.0){ node = l; continue; }
+      if(dr >= 0.0){ node = r; continue; }
+    }
+    if(sp == 0) break;
+    sp--; node = stack[sp];
   }
   return tr;
 }
 
-/* --- BRDF --- */
 float D_GGX(float ndh, float a){ float a2=a*a; float d=ndh*ndh*(a2-1.0)+1.0; return a2/max(PI*d*d, 1e-9); }
 float V_Smith(float ndl, float ndv, float a){
   float a2 = a*a;
@@ -3514,8 +3567,6 @@ vec3 ggxDir(vec3 n, vec3 v, float a){
   vec3 h = onb(n, vec3(st*cos(phi), st*sin(phi), ct));
   return reflect(-v, h);
 }
-
-/* --- 环境 --- */
 vec3 envRad(vec3 d){
   vec3 c = mix(uSkyBot, uSkyTop, clamp(d.y*0.5+0.5, 0.0, 1.0));
   if(uHasEnv == 1){
@@ -3528,17 +3579,15 @@ vec3 envRad(vec3 d){
   return c;
 }
 
-/* --- 直接光（NEE） --- */
-vec3 directLight(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal){
-  if(uNLight == 0) return vec3(0.0);
-  int li = int(min(float(uNLight)-0.001, rnd()*float(uNLight)));
+/* 单盏灯的直接光贡献（含可见性） */
+vec3 oneLight(int li, vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal){
   vec4 L0 = fx(tLight, li*4+0);
   vec4 L1 = fx(tLight, li*4+1);
   vec4 L2 = fx(tLight, li*4+2);
   vec4 L3 = fx(tLight, li*4+3);
   int type = int(L0.w + 0.5);
   vec3 Ld; float dist; vec3 E;
-  if(type == 0){                                     // 平行光：锥内抖动 = 软阴影
+  if(type == 0){
     vec3 d = normalize(L2.xyz);
     float ang = rnd()*2.0*PI, rr = L3.z*sqrt(rnd());
     vec3 up = abs(d.y) < 0.92 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0);
@@ -3546,7 +3595,7 @@ vec3 directLight(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal){
     Ld = normalize(d + (cos(ang)*t1 + sin(ang)*t2)*rr);
     dist = 1e5;
     E = L1.rgb*L1.w;
-  } else {                                           // 点/聚光：按小球采样 = 半影
+  } else {
     vec3 rv = normalize(vec3(rnd()*2.0-1.0, rnd()*2.0-1.0, rnd()*2.0-1.0) + vec3(1e-4));
     vec3 lp = L0.xyz + rv*L3.z;
     vec3 dv = lp - P; dist = length(dv);
@@ -3564,9 +3613,49 @@ vec3 directLight(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal){
   }
   float ndl = dot(N, Ld);
   if(ndl <= 0.0) return vec3(0.0);
+  if(max(E.r,max(E.g,E.b))*ndl < 1e-5) return vec3(0.0);     // 太暗就别浪费一条阴影光线
   vec3 vis = visibility(P + N*2e-3, Ld, dist - 4e-3);
   if(dot(vis,vis) <= 0.0) return vec3(0.0);
-  return evalBRDF(N, V, Ld, alb, rough, metal) * E * ndl * vis * float(uNLight);
+  return evalBRDF(N, V, Ld, alb, rough, metal) * E * ndl * vis;
+}
+/* 直接光：首次弹射多采几盏（画面里看得见的部分噪点最刺眼），深层只采一盏 */
+vec3 directLight(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal, int bounce){
+  if(uNLight == 0) return vec3(0.0);
+  int want = bounce == 0 ? min(uNLight, 6) : 1;
+  if(want >= uNLight){
+    vec3 s = vec3(0.0);
+    for(int i = 0; i < 32; i++){ if(i >= uNLight) break; s += oneLight(i, P, N, V, alb, rough, metal); }
+    return s;
+  }
+  vec3 s = vec3(0.0);
+  for(int j = 0; j < 6; j++){
+    if(j >= want) break;
+    int li = int(min(float(uNLight)-0.001, rnd()*float(uNLight)));
+    s += oneLight(li, P, N, V, alb, rough, metal);
+  }
+  return s * float(uNLight) / float(want);
+}
+
+/* 取交点的材质与着色量 */
+struct Surf { vec3 N; vec3 alb; vec3 emis; float rough; float metal; float trans; float ior; };
+Surf surfAt(Hit h, vec3 rd){
+  Surf s;
+  vec4 a0 = fx(tAttr, h.tri*3+0), a1 = fx(tAttr, h.tri*3+1), a2 = fx(tAttr, h.tri*3+2);
+  float w = 1.0 - h.bary.x - h.bary.y;
+  vec3 Ng = normalize(octDec(a0.xy)*w + octDec(a1.xy)*h.bary.x + octDec(a2.xy)*h.bary.y);
+  vec2 uv = a0.zw*w + a1.zw*h.bary.x + a2.zw*h.bary.y;
+  s.N = dot(Ng, rd) > 0.0 ? -Ng : Ng;
+  int mi = matOf(h.tri);
+  vec4 m0 = fx(tMat, mi*4+0), m1 = fx(tMat, mi*4+1),
+       m2 = fx(tMat, mi*4+2), m3 = fx(tMat, mi*4+3);
+  s.alb = m0.rgb; s.rough = m0.a;
+  s.emis = m1.rgb; s.metal = m1.a;
+  s.trans = m2.w; s.ior = m3.z;
+  if(m2.x >= 0.0){
+    vec2 tuv = uv*vec2(m2.y, m2.z) + vec2(m3.x, m3.y);
+    s.alb *= srgb2lin(texture(tMaps, vec3(fract(tuv), m2.x)).rgb);
+  }
+  return s;
 }
 
 void main(){
@@ -3574,6 +3663,30 @@ void main(){
   rngState = uint(pc.x) * 1973u + uint(pc.y) * 9277u + uint(uFrame) * 26699u + 1u;
   pcg(); pcg();
 
+  /* ---- G-buffer 模式：一条主光线，给降噪器提供 albedo / 法线 / 深度 ---- */
+  if(uMode > 0){
+    vec2 ndc = (gl_FragCoord.xy/uRes)*2.0 - 1.0;
+    vec3 dc = normalize(vec3(ndc.x*uTanHalf*uAspect, ndc.y*uTanHalf, -1.0));
+    vec3 rd = normalize((uCamMat*vec4(dc, 0.0)).xyz);
+    vec3 ro = uCamPos; float travel = 0.0;
+    for(int k = 0; k < 4; k++){                   // 玻璃穿过去，记录后面的实体
+      Hit h;
+      if(!trace(ro, rd, 1e5, h)){
+        outColor = uMode == 1 ? vec4(1.0) : vec4(0.0);   // 天空：albedo=1、深度=0（不参与滤波）
+        return;
+      }
+      Surf s = surfAt(h, rd);
+      travel += h.t;
+      if(s.trans > 0.5 && k < 3){ ro = ro + rd*(h.t + 1e-3); continue; }
+      if(uMode == 1) outColor = vec4(max(s.alb + s.emis*0.5, vec3(0.02)), 1.0);
+      else           outColor = vec4(s.N, travel);
+      return;
+    }
+    outColor = uMode == 1 ? vec4(1.0) : vec4(0.0);
+    return;
+  }
+
+  /* ---- 路径追踪 ---- */
   vec2 px = gl_FragCoord.xy + vec2(rnd(), rnd()) - 0.5;
   vec2 ndc = px/uRes*2.0 - 1.0;
   vec3 dc = normalize(vec3(ndc.x*uTanHalf*uAspect, ndc.y*uTanHalf, -1.0));
@@ -3585,65 +3698,36 @@ void main(){
     if(b >= uBounces) break;
     Hit h;
     if(!trace(ro, rd, 1e5, h)){ L += T*envRad(rd); break; }
-    // 顶点属性插值
-    vec4 a0 = fx(tAttr, h.tri*3+0), a1 = fx(tAttr, h.tri*3+1), a2 = fx(tAttr, h.tri*3+2);
-    float w = 1.0 - h.bary.x - h.bary.y;
-    vec3 Ng = normalize(octDec(a0.xy)*w + octDec(a1.xy)*h.bary.x + octDec(a2.xy)*h.bary.y);
-    vec2 uv = a0.zw*w + a1.zw*h.bary.x + a2.zw*h.bary.y;
+    Surf s = surfAt(h, rd);
     vec3 P = ro + rd*h.t;
-    bool back = dot(Ng, rd) > 0.0;
-    vec3 N = back ? -Ng : Ng;
     vec3 V = -rd;
+    L += T*s.emis;
 
-    int mi = matOf(h.tri);
-    vec4 m0 = fx(tMat, mi*4+0), m1 = fx(tMat, mi*4+1),
-         m2 = fx(tMat, mi*4+2), m3 = fx(tMat, mi*4+3);
-    vec3 alb = m0.rgb; float rough = m0.a;
-    vec3 emis = m1.rgb; float metal = m1.a;
-    float trans = m2.w;
-    if(m2.x >= 0.0){
-      vec2 tuv = uv*vec2(m2.y, m2.z) + vec2(m3.x, m3.y);
-      vec3 tc = texture(tMaps, vec3(fract(tuv), m2.x)).rgb;
-      alb *= srgb2lin(tc);
-    }
-    L += T*emis;
-
-    if(trans > 0.5){                                   // 电介质：菲涅尔决定反射/折射
-      float eta = back ? m3.z : 1.0/m3.z;
-      float c = clamp(dot(N, V), 0.0, 1.0);
-      float r0 = (1.0-m3.z)/(1.0+m3.z); r0 = r0*r0;
+    if(s.trans > 0.5){
+      bool back = dot(s.N, rd) > 0.0;
+      float eta = back ? s.ior : 1.0/s.ior;
+      float c = clamp(dot(s.N, V), 0.0, 1.0);
+      float r0 = (1.0-s.ior)/(1.0+s.ior); r0 = r0*r0;
       float F = r0 + (1.0-r0)*pow(1.0-c, 5.0);
-      vec3 refr = refract(-V, N, eta);
-      if(rnd() < F || dot(refr,refr) < 1e-6){ rd = reflect(-V, N); }
-      else { rd = normalize(refr); T *= mix(vec3(1.0), alb, 0.35); }
+      vec3 refr = refract(-V, s.N, eta);
+      if(rnd() < F || dot(refr,refr) < 1e-6){ rd = reflect(-V, s.N); }
+      else { rd = normalize(refr); T *= mix(vec3(1.0), s.alb, 0.35); }
       ro = P + rd*1e-3;
       continue;
     }
 
-    L += T*directLight(P, N, V, alb, rough, metal);
+    L += T*directLight(P, s.N, V, s.alb, s.rough, s.metal, b);
 
-    // BSDF 采样
-    vec3 F0 = mix(vec3(0.04), alb, metal);
-    float pSpec = clamp(0.05 + metal*0.85 + (1.0-rough)*0.22, 0.05, 0.95);
-    vec3 nd; float pdf;
-    if(rnd() < pSpec){
-      nd = ggxDir(N, V, max(rough*rough, 1e-4));
-      if(dot(nd, N) <= 0.0) break;
-      vec3 H = normalize(V+nd);
-      float ndh = max(dot(N,H), 1e-4), vdh = max(dot(V,H), 1e-4);
-      pdf = D_GGX(ndh, max(rough*rough,1e-4))*ndh/(4.0*vdh)*pSpec
-          + max(dot(nd,N),0.0)/PI*(1.0-pSpec);
-    } else {
-      nd = cosineDir(N);
-      if(dot(nd, N) <= 0.0) break;
-      vec3 H = normalize(V+nd);
-      float ndh = max(dot(N,H), 1e-4), vdh = max(dot(V,H), 1e-4);
-      pdf = D_GGX(ndh, max(rough*rough,1e-4))*ndh/(4.0*vdh)*pSpec
-          + max(dot(nd,N),0.0)/PI*(1.0-pSpec);
-    }
+    float pSpec = clamp(0.05 + s.metal*0.85 + (1.0-s.rough)*0.22, 0.05, 0.95);
+    float a = max(s.rough*s.rough, 1e-4);
+    vec3 nd = rnd() < pSpec ? ggxDir(s.N, V, a) : cosineDir(s.N);
+    if(dot(nd, s.N) <= 0.0) break;
+    vec3 H = normalize(V+nd);
+    float ndh = max(dot(s.N,H), 1e-4), vdh = max(dot(V,H), 1e-4);
+    float pdf = D_GGX(ndh, a)*ndh/(4.0*vdh)*pSpec + max(dot(nd,s.N),0.0)/PI*(1.0-pSpec);
     if(pdf < 1e-8) break;
-    T *= evalBRDF(N, V, nd, alb, rough, metal) * max(dot(N,nd),0.0) / pdf;
-    ro = P + N*2e-3;
+    T *= evalBRDF(s.N, V, nd, s.alb, s.rough, s.metal) * max(dot(s.N,nd),0.0) / pdf;
+    ro = P + s.N*2e-3;
     rd = nd;
 
     float q = max(T.r, max(T.g, T.b));
@@ -3654,17 +3738,91 @@ void main(){
       T /= pq;
     }
   }
-  L = clamp(L, 0.0, 60.0);                              // 夹掉萤火虫噪点
+  L = min(L, vec3(uClamp));                      // 钳掉萤火虫
   outColor = vec4(L, 1.0);
 }
 `;
 
+/* À-Trous 边缘保持小波降噪（Dammertz 等）：按法线/深度/颜色差加权的多级 5x5 滤波。
+   输入是「除掉 albedo 的辐照度」，滤完再乘回 albedo —— 这样贴图细节不会被抹平。 */
+const PT_DENOISE = `
+precision highp float;
+out vec4 outColor;
+uniform sampler2D tIn, tNrm;
+uniform vec2 uRes;
+uniform int uStep;
+uniform float uSigC, uSigN, uSigZ;
+void main(){
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec3 c0 = texelFetch(tIn, p, 0).rgb;
+  vec4 g0 = texelFetch(tNrm, p, 0);
+  if(g0.w <= 0.0){ outColor = vec4(c0, 1.0); return; }      // 天空/窗外：不滤，保住锐度
+  float kk[5]; kk[0]=0.0625; kk[1]=0.25; kk[2]=0.375; kk[3]=0.25; kk[4]=0.0625;
+  vec3 sum = vec3(0.0); float wsum = 0.0;
+  ivec2 R = ivec2(uRes);
+  for(int dy = -2; dy <= 2; dy++){
+    for(int dx = -2; dx <= 2; dx++){
+      ivec2 q = p + ivec2(dx, dy)*uStep;
+      if(q.x < 0 || q.y < 0 || q.x >= R.x || q.y >= R.y) continue;
+      vec4 g = texelFetch(tNrm, q, 0);
+      if(g.w <= 0.0) continue;
+      vec3 c = texelFetch(tIn, q, 0).rgb;
+      float wn = pow(max(dot(g0.xyz, g.xyz), 0.0), uSigN);
+      float wz = exp(-abs(g0.w - g.w) / (uSigZ * max(g0.w, 0.5)));
+      vec3 dc = c - c0;
+      float wc = exp(-dot(dc, dc) / uSigC);
+      float w = kk[dx+2]*kk[dy+2]*wn*wz*wc;
+      sum += c*w; wsum += w;
+    }
+  }
+  outColor = vec4(sum/max(wsum, 1e-6), 1.0);
+}
+`;
+/* 累积图 ÷ 采样数 ÷ albedo → 交给降噪器 */
+const PT_DEMOD = `
+precision highp float;
+out vec4 outColor;
+uniform sampler2D tAcc, tAlb;
+uniform float uN;
+void main(){
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec3 c = texelFetch(tAcc, p, 0).rgb / max(uN, 1.0);
+  vec3 a = max(texelFetch(tAlb, p, 0).rgb, vec3(0.045));
+  outColor = vec4(c/a, 1.0);
+}
+`;
+/* 乘回 albedo → ACES → sRGB */
+const PT_RESOLVE = `
+precision highp float;
+out vec4 outColor;
+uniform sampler2D tIrr, tAlb, tAcc;
+uniform float uExp, uN;
+uniform int uDenoise;
+vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0); }
+void main(){
+  ivec2 p = ivec2(gl_FragCoord.xy);
+  vec3 c;
+  if(uDenoise == 1) c = texelFetch(tIrr, p, 0).rgb * max(texelFetch(tAlb, p, 0).rgb, vec3(0.045));
+  else              c = texelFetch(tAcc, p, 0).rgb / max(uN, 1.0);
+  c = aces(c*uExp);
+  c = mix(c*12.92, 1.055*pow(max(c, vec3(0.0031308)), vec3(1.0/2.4)) - 0.055, step(vec3(0.0031308), c));
+  outColor = vec4(c, 1.0);
+}
+`;
+
 /* ---------- 7. 渲染循环 ---------- */
+const PT_QUALITY = {
+  draft:  {spp:120,  bounces:4, maxPx: 480*1000, label:'草稿'},
+  normal: {spp:320,  bounces:6, maxPx: 900*1000, label:'标准'},
+  fine:   {spp:900,  bounces:8, maxPx:1600*1000, label:'精细'}
+};
 function ptRender(samples, ptOpts){
-  ptOpts = ptOpts || {};   // 注意：内层 setTimeout 里有个 const opts（渲染目标参数），不能重名
+  ptOpts = ptOpts || {};
   if(!three || three.photo) return;
   if(!three.renderer.capabilities.isWebGL2){ alert('当前浏览器没有 WebGL2，无法使用光线追踪渲染。'); return; }
-  samples = samples || 400;
+  const Q = PT_QUALITY[ptOpts.quality || state.ptQ || 'normal'] || PT_QUALITY.normal;
+  samples = samples || Q.spp;
+  const denoiseOn = ptOpts.denoise != null ? !!ptOpts.denoise : (state.ptDN !== false);
   const {renderer, cam, canvas} = three;
   const bar = $('#photoBar'), lbl = $('#photoTxt');
   bar.style.display = 'flex';
@@ -3681,14 +3839,13 @@ function ptRender(samples, ptOpts){
     ptDispose(); PT = built;
 
     const W = canvas.clientWidth||canvas.width, H = canvas.clientHeight||canvas.height;
-    const MAXPX = ptOpts.maxPx || 1600*1000;
-    let sc = Math.min(1, Math.sqrt(MAXPX/(W*H)));
+    const MAXPX = ptOpts.maxPx || Q.maxPx;
+    const sc = Math.min(1, Math.sqrt(MAXPX/(W*H)));
     const rw = Math.max(64, Math.round(W*sc)), rh = Math.max(64, Math.round(H*sc));
-    const opts = {type:THREE.HalfFloatType, format:THREE.RGBAFormat,
-                  minFilter:THREE.NearestFilter, magFilter:THREE.NearestFilter, depthBuffer:false};
-    const accRT = new THREE.WebGLRenderTarget(rw, rh, opts);
+    const RT = (dep)=> new THREE.WebGLRenderTarget(rw, rh, {type:THREE.HalfFloatType,
+      format:THREE.RGBAFormat, minFilter:THREE.NearestFilter, magFilter:THREE.NearestFilter, depthBuffer:!!dep});
+    const accRT = RT(false), albRT = RT(false), nrmRT = RT(false), dnA = RT(false), dnB = RT(false);
     const oCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
-    const VS = 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
     const VS3 = 'out vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
 
     const hemi = three.hemi, amb = three.amb;
@@ -3697,73 +3854,93 @@ function ptRender(samples, ptOpts){
     const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
     const pano = three.panorama || null;
 
-    const ptMat = new THREE.ShaderMaterial({
-      glslVersion: THREE.GLSL3,
-      uniforms:{
-        tPos:{value:PT.tPos}, tAttr:{value:PT.tAttr}, tBVH:{value:PT.tBVH},
-        tMat:{value:PT.tMat}, tLight:{value:PT.tLight}, tMaps:{value:PT.tMaps},
-        tEnv:{value:pano},
-        uRes:{value:new THREE.Vector2(rw,rh)},
-        uCamPos:{value:new THREE.Vector3()},
-        uCamMat:{value:new THREE.Matrix4()},
-        uTanHalf:{value:1}, uAspect:{value:rw/rh},
-        uFrame:{value:0}, uBounces:{value:ptOpts.bounces||6}, uNLight:{value:PT.nLight},
-        uHasEnv:{value:pano?1:0}, uEnvSRGB:{value:(pano&&pano.encoding===THREE.sRGBEncoding)?1:0},
-        uEnvInt:{value:0.42},
-        uSkyTop:{value:new THREE.Vector3(top.r,top.g,top.b)},
-        uSkyBot:{value:new THREE.Vector3(bot.r,bot.g,bot.b)}
-      },
-      vertexShader: VS3, fragmentShader: PT_FRAG,
-      blending: THREE.AdditiveBlending, transparent: true,
-      depthTest: false, depthWrite: false
-    });
-    const resMat = new THREE.ShaderMaterial({
-      uniforms:{tAcc:{value:accRT.texture}, uN:{value:1}, uExp:{value:renderer.toneMappingExposure}},
-      vertexShader: VS, fragmentShader: `
-        uniform sampler2D tAcc; uniform float uN; uniform float uExp; varying vec2 vUv;
-        vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }
-        void main(){ vec3 c=texture2D(tAcc,vUv).rgb/max(uN,1.0);
-          c=aces(c*uExp);
-          c=mix(c*12.92, 1.055*pow(max(c,vec3(0.0031308)),vec3(1.0/2.4))-0.055, step(vec3(0.0031308),c));
-          gl_FragColor=vec4(c,1.0); }`,
-      depthTest:false, depthWrite:false});
+    const uni = {
+      tPos:{value:PT.tPos}, tAttr:{value:PT.tAttr}, tBVH:{value:PT.tBVH},
+      tMat:{value:PT.tMat}, tLight:{value:PT.tLight}, tMaps:{value:PT.tMaps},
+      tEnv:{value:pano},
+      uRes:{value:new THREE.Vector2(rw,rh)},
+      uCamPos:{value:new THREE.Vector3()}, uCamMat:{value:new THREE.Matrix4()},
+      uTanHalf:{value:1}, uAspect:{value:rw/rh},
+      uFrame:{value:0}, uBounces:{value:ptOpts.bounces||Q.bounces}, uNLight:{value:PT.nLight},
+      uHasEnv:{value:pano?1:0}, uEnvSRGB:{value:(pano&&pano.encoding===THREE.sRGBEncoding)?1:0},
+      uEnvInt:{value:0.42}, uClamp:{value:24.0}, uMode:{value:0},
+      uSkyTop:{value:new THREE.Vector3(top.r,top.g,top.b)},
+      uSkyBot:{value:new THREE.Vector3(bot.r,bot.g,bot.b)}
+    };
+    const mk=(frag, extra, blend)=>new THREE.ShaderMaterial(Object.assign({
+      glslVersion:THREE.GLSL3, vertexShader:VS3, fragmentShader:frag,
+      depthTest:false, depthWrite:false}, extra||{},
+      blend? {blending:THREE.AdditiveBlending, transparent:true} : {}));
+    const ptMat = mk(PT_FRAG, {uniforms:uni}, true);
+    const gMat  = mk(PT_FRAG, {uniforms:uni}, false);
+    const dnMat = mk(PT_DENOISE, {uniforms:{
+      tIn:{value:null}, tNrm:{value:nrmRT.texture}, uRes:{value:new THREE.Vector2(rw,rh)},
+      uStep:{value:1}, uSigC:{value:0.6}, uSigN:{value:48.0}, uSigZ:{value:0.06}}}, false);
+    const dmMat = mk(PT_DEMOD, {uniforms:{
+      tAcc:{value:accRT.texture}, tAlb:{value:albRT.texture}, uN:{value:1}}}, false);
+    const rsMat = mk(PT_RESOLVE, {uniforms:{
+      tIrr:{value:dnA.texture}, tAlb:{value:albRT.texture}, tAcc:{value:accRT.texture},
+      uExp:{value:renderer.toneMappingExposure}, uN:{value:1}, uDenoise:{value:denoiseOn?1:0}}}, false);
 
-    const qs = new THREE.Scene();
-    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), ptMat); quad.frustumCulled=false; qs.add(quad);
-    const rs = new THREE.Scene();
-    const rq = new THREE.Mesh(new THREE.PlaneGeometry(2,2), resMat); rq.frustumCulled=false; rs.add(rq);
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), ptMat); quad.frustumCulled=false;
+    const qs = new THREE.Scene(); qs.add(quad);
+    const blit=(mat, target)=>{ quad.material=mat; renderer.setRenderTarget(target||null);
+      renderer.autoClear=true; renderer.render(qs, oCam); };
 
     cam.updateMatrixWorld(true);
-    ptMat.uniforms.uCamPos.value.setFromMatrixPosition(cam.matrixWorld);
-    ptMat.uniforms.uCamMat.value.copy(cam.matrixWorld);
-    ptMat.uniforms.uTanHalf.value = Math.tan(cam.fov*Math.PI/360);
-    ptMat.uniforms.uAspect.value = rw/rh;
+    uni.uCamPos.value.setFromMatrixPosition(cam.matrixWorld);
+    uni.uCamMat.value.copy(cam.matrixWorld);
+    uni.uTanHalf.value = Math.tan(cam.fov*Math.PI/360);
+    uni.uAspect.value = rw/rh;
 
     const savedPR = renderer.getPixelRatio(), savedAC = renderer.autoClear;
     renderer.setPixelRatio(1);
+    renderer.setSize(rw, rh, false);          // 只设一次：每帧 setSize 会重建默认帧缓冲，是之前卡住的元凶
+    // G-buffer（各一条主光线）
+    uni.uMode.value = 1; blit(gMat, albRT);
+    uni.uMode.value = 2; blit(gMat, nrmRT);
+    uni.uMode.value = 0;
     renderer.setRenderTarget(accRT); renderer.setClearColor(0x000000,1); renderer.clear(true,true,true);
     renderer.setRenderTarget(null);
 
-    const TX = 3, TY = 3, NT = TX*TY;              // 分块渲染：单次 draw 别太长，避免卡死界面
-    let spp = 0, tile = 0, frames = 0;
+    const NT = 16, TX = 4;                     // 4x4 分块
+    let spp = 0, tile = 0, tilesDone = 0;
+    const totalTiles = samples*NT;
     const t0 = performance.now();
+    let lastPreview = 0;
+
+    const denoise = (iters)=>{
+      dmMat.uniforms.uN.value = Math.max(1, spp);
+      blit(dmMat, dnA);
+      let src = dnA, dst = dnB;
+      dnMat.uniforms.uSigC.value = Math.max(0.010, 1.1/Math.max(1, spp));
+      for(let i=0;i<iters;i++){
+        dnMat.uniforms.tIn.value = src.texture;
+        dnMat.uniforms.uStep.value = 1<<i;
+        blit(dnMat, dst);
+        const t=src; src=dst; dst=t;
+      }
+      rsMat.uniforms.tIrr.value = src.texture;
+    };
+    const present = (iters)=>{
+      if(denoiseOn && spp>0) denoise(iters);
+      rsMat.uniforms.uN.value = Math.max(1, spp);
+      blit(rsMat, null);
+    };
 
     const finish = (aborted)=>{
-      renderer.setRenderTarget(null);
-      renderer.setScissorTest(false);
+      renderer.setRenderTarget(null); renderer.setScissorTest(false);
       renderer.autoClear = savedAC;
       let out = null;
       if(!aborted && spp > 0){
-        resMat.uniforms.uN.value = spp;
-        renderer.setSize(rw, rh, false);
-        renderer.autoClear = true;
-        renderer.render(rs, oCam);
+        present(5);
         const cv = document.createElement('canvas'); cv.width=rw; cv.height=rh;
         cv.getContext('2d').drawImage(renderer.domElement, 0, 0, rw, rh);
         out = cv;
       }
-      accRT.dispose(); ptMat.dispose(); resMat.dispose();
-      quad.geometry.dispose(); rq.geometry.dispose();
+      [accRT,albRT,nrmRT,dnA,dnB].forEach(t=>t.dispose());
+      [ptMat,gMat,dnMat,dmMat,rsMat].forEach(m=>m.dispose());
+      quad.geometry.dispose();
       ptDispose();
       renderer.setSize(canvas.clientWidth||canvas.width, canvas.clientHeight||canvas.height, false);
       renderer.setPixelRatio(savedPR);
@@ -3777,12 +3954,14 @@ function ptRender(samples, ptOpts){
     const step = ()=>{
       if(cancelled){ finish(true); return; }
       const fs = performance.now();
+      quad.material = ptMat;
       renderer.autoClear = false;
-      while(performance.now()-fs < 60){
+      let batch = 0;
+      do {
         const tx = tile % TX, ty = (tile/TX)|0;
         const x0 = Math.floor(tx*rw/TX), x1 = Math.floor((tx+1)*rw/TX);
-        const y0 = Math.floor(ty*rh/TY), y1 = Math.floor((ty+1)*rh/TY);
-        ptMat.uniforms.uFrame.value = spp*NT + tile + 1;
+        const y0 = Math.floor(ty*rh/TX), y1 = Math.floor((ty+1)*rh/TX);
+        uni.uFrame.value = tilesDone + 1;
         renderer.setRenderTarget(accRT);
         renderer.setScissorTest(true);
         renderer.setScissor(x0, y0, x1-x0, y1-y0);
@@ -3790,30 +3969,198 @@ function ptRender(samples, ptOpts){
         renderer.render(qs, oCam);
         renderer.setScissorTest(false);
         renderer.setRenderTarget(null);
-        tile++;
+        tile++; tilesDone++; batch++;
         if(tile >= NT){ tile = 0; spp++; }
-        if(spp >= samples) break;
-      }
+        // 每帧最多排一整轮：GPU 是异步的，CPU 光按耗时判断会把命令队列排爆、界面失去响应
+      } while(batch < NT && spp < samples && performance.now()-fs < 45);
       renderer.autoClear = savedAC;
-      // 实时预览：让用户看着它收敛
-      if(spp > 0){
-        resMat.uniforms.uN.value = spp;
-        renderer.setSize(rw, rh, false);
-        renderer.autoClear = true;
-        renderer.setRenderTarget(null);
-        renderer.render(rs, oCam);
-        renderer.autoClear = savedAC;
-      }
-      frames++;
-      const el = ((performance.now()-t0)/1000).toFixed(1);
-      lbl.textContent = '光线追踪渲染中… '+Math.round(spp/samples*100)+'%（'+spp+'/'+samples+
-        ' spp · '+el+'s · '+PT.nTri.toLocaleString()+' 三角形 / '+PT.nLight+' 光源）';
+
+      const now = performance.now();
+      if(spp > 0 && (now-lastPreview > 700 || spp >= samples)){ present(3); lastPreview = now; }
+
+      const frac = tilesDone/totalTiles;
+      const el = (now-t0)/1000;
+      const eta = frac>0.004 ? Math.max(0, el/frac - el) : 0;
+      const fmt = (v)=> v>=60 ? Math.floor(v/60)+'分'+String(Math.round(v%60)).padStart(2,'0')+'秒' : v.toFixed(0)+'秒';
+      lbl.textContent = '光线追踪 '+(frac*100).toFixed(1)+'%（'+spp+'/'+samples+' spp · 已用 '+fmt(el)+
+        (eta>1?' · 约剩 '+fmt(eta):'')+' · '+PT.nTri.toLocaleString()+' 三角形 / '+PT.nLight+' 光源'+
+        (denoiseOn?' · 降噪开':'')+'）';
       if(spp >= samples){ finish(false); return; }
       setTimeout(step, 0);
     };
     setTimeout(step, 0);
   }, 40);
 }
+
+/* ===== 补齐的基础贴图：板材 / 地毯绒面 / 金属烤漆 / 塑料橘皮 =====
+   这四类此前完全没有贴图，泛型建模的柜体、地毯、铁架、塑料件都是纯色平板，
+   近看一眼假。贴图一律以近白为基调，靠 material.color 上色。 */
+let _lamTex=null, _carpetTex=null, _powderTex=null, _plasticTex=null, _leatherTex=null;
+
+/* 三聚氰胺/烤漆板：极细颗粒 + 轻微顺向纹 + 偶发微瑕 */
+function laminateTexture(){
+  if(_lamTex) return _lamTex;
+  srand(1011);
+  const N=512, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#fdfcfa'; g.fillRect(0,0,N,N);
+  for(let i=0;i<26000;i++){                       // 颗粒
+    const v=rnd01()<0.5?0:255;
+    g.fillStyle=`rgba(${v},${v},${v},${0.012+rnd01()*0.030})`;
+    g.fillRect(rnd01()*N, rnd01()*N, 1, 1);
+  }
+  for(let i=0;i<170;i++){                         // 顺向压纹
+    const y=rnd01()*N;
+    g.strokeStyle=`rgba(0,0,0,${0.008+rnd01()*0.016})`;
+    g.lineWidth=0.5+rnd01()*1.4;
+    g.beginPath(); g.moveTo(0,y); g.lineTo(N, y+(rnd01()-0.5)*3); g.stroke();
+  }
+  for(let i=0;i<40;i++){                          // 微瑕/气泡点
+    g.fillStyle=`rgba(0,0,0,${0.02+rnd01()*0.03})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 0.6+rnd01()*1.6, 0, 6.283); g.fill();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(2,2); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _lamTex=t; return t;
+}
+/* 地毯绒面：密集绒簇 + 低频色斑，法线强度要大才有毛绒感 */
+function carpetTexture(){
+  if(_carpetTex) return _carpetTex;
+  srand(1012);
+  const N=512, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#f3f1ec'; g.fillRect(0,0,N,N);
+  for(let i=0;i<90;i++){                          // 低频染色不匀
+    g.fillStyle=`rgba(${rnd01()<0.5?90:255},${rnd01()<0.5?90:255},${rnd01()<0.5?90:255},0.035)`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 20+rnd01()*70, 0, 6.283); g.fill();
+  }
+  for(let i=0;i<52000;i++){                       // 绒簇
+    const a=rnd01()*6.283, L=1.2+rnd01()*2.6, x=rnd01()*N, y=rnd01()*N;
+    const v=rnd01()<0.5?40:250;
+    g.strokeStyle=`rgba(${v},${v},${v},${0.05+rnd01()*0.11})`;
+    g.lineWidth=0.7+rnd01()*0.8;
+    g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(a)*L, y+Math.sin(a)*L); g.stroke();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(6,6); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _carpetTex=t; return t;
+}
+/* 金属烤漆（铁床架/推车）：细橘皮 + 偶发轻微流平痕 */
+function powderCoatTexture(){
+  if(_powderTex) return _powderTex;
+  srand(1013);
+  const N=256, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#f7f7f8'; g.fillRect(0,0,N,N);
+  for(let i=0;i<9000;i++){
+    const r=0.6+rnd01()*1.5, v=rnd01()<0.5?70:255;
+    g.fillStyle=`rgba(${v},${v},${v},${0.02+rnd01()*0.05})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, r, 0, 6.283); g.fill();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(5,5); t.encoding=THREE.sRGBEncoding; _powderTex=t; return t;
+}
+/* 注塑塑料：非常细的橘皮，只为打断"完全平滑"的塑料感 */
+function plasticTexture(){
+  if(_plasticTex) return _plasticTex;
+  srand(1014);
+  const N=256, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#fbfbfc'; g.fillRect(0,0,N,N);
+  for(let i=0;i<6000;i++){
+    const v=rnd01()<0.5?120:255;
+    g.fillStyle=`rgba(${v},${v},${v},${0.015+rnd01()*0.030})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 0.8+rnd01()*2.2, 0, 6.283); g.fill();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(4,4); t.encoding=THREE.sRGBEncoding; _plasticTex=t; return t;
+}
+
+/* 素皮 / 皮革：不规则毛孔纹（爬行垫的硅胶涂层面、皮质家具） */
+function leatherTexture(){
+  if(_leatherTex) return _leatherTex;
+  srand(1015);
+  const N=512, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#f6f3ee'; g.fillRect(0,0,N,N);
+  for(let i=0;i<2600;i++){                       // 皮纹格
+    const x=rnd01()*N, y=rnd01()*N, r=3+rnd01()*11;
+    g.strokeStyle=`rgba(0,0,0,${0.018+rnd01()*0.040})`;
+    g.lineWidth=0.5+rnd01()*1.0;
+    g.beginPath();
+    const n=5+((rnd01()*3)|0);
+    for(let k=0;k<=n;k++){ const a=6.283*k/n+rnd01()*0.35, rr=r*(0.7+rnd01()*0.5);
+      const px=x+Math.cos(a)*rr, py=y+Math.sin(a)*rr;
+      if(k===0) g.moveTo(px,py); else g.lineTo(px,py); }
+    g.closePath(); g.stroke();
+  }
+  for(let i=0;i<16000;i++){                      // 毛孔
+    g.fillStyle=`rgba(0,0,0,${0.02+rnd01()*0.05})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 0.4+rnd01()*0.9, 0, 6.283); g.fill();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(3,3); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _leatherTex=t; return t;
+}
+
+/* 贴图密度要随家具尺寸变，否则 40cm 床头柜和 200cm 沙发纹理一样大。
+   把缩放吸附到几档并缓存——每 clone 一次都会多一次 GPU 上传，不能按件克隆。 */
+const _texVar=new Map();
+const _TEX_LADDER=[0.25,0.5,0.75,1,1.5,2,3,4,6,8];
+function texScaled(base, ftSize, per){
+  if(!base) return base;
+  const want = Math.max(0.25, (ftSize||3) / (per||3));
+  let s=_TEX_LADDER[0];
+  for(const v of _TEX_LADDER) if(Math.abs(v-want) < Math.abs(s-want)) s=v;
+  if(Math.abs(s-1)<1e-6) return base;
+  const key = base.uuid+'|'+s;
+  let t=_texVar.get(key);
+  if(!t){
+    t = base.clone(); t.needsUpdate = true;
+    t.repeat.set(base.repeat.x*s, base.repeat.y*s);
+    _texVar.set(key, t);
+  }
+  return t;
+}
+
+/* 泛型建模的统一材质工厂：按 kind 决定贴图 / 粗糙度 / 金属度 / 环境反射强度。
+   之前这里只有 `new MeshStandardMaterial({color, roughness:.85})`——
+   25 个 kind 全是无贴图纯色板。 */
+const _furnMatCache=new Map();
+const FURN_SOFT = ['sofa','sofaL','armchair','playCouch','bed','stool','officeChair','swivelChair','chair'];
+const FURN_CASE = ['bookcase','shelf','dresser','nightstand','shoeCab','tvBench','desk','deskSitStand',
+                   'sideTable','coffeeTable','tableRect','tableRound','tableFold','tableDrawer','crib','box'];
+const FURN_METAL= ['bedMetal','cart'];
+function furnMats(spec, col){
+  const kind = spec.kind || 'box';
+  const size = cm2ft(Math.max(spec.w||90, spec.d||60));
+  const key = [kind, spec.wood||'', col.getHexString(), Math.round(size*4)].join('|');
+  const hit = _furnMatCache.get(key);
+  if(hit) return hit;
+  let base=null, rough=.8, metal=0, envI=.30, clear=0, nStr=.6, per=3;
+  if(FURN_SOFT.includes(kind)){ base=fabricTexture(); rough=.95; envI=.18; nStr=1.0; per=5; }
+  else if(FURN_METAL.includes(kind)){ base=powderCoatTexture(); rough=.44; metal=.55; envI=.55; nStr=.5; per=4; }
+  else if(kind==='rug' || kind==='playMat'){ base=carpetTexture(); rough=1.0; envI=.08; nStr=1.6; per=6; }
+  else if(kind==='lamp'){ base=fabricTexture(); rough=.9; envI=.20; nStr=.8; per=2; }
+  else if(FURN_CASE.includes(kind)){
+    base = spec.wood ? woodSpecies(spec.wood) : laminateTexture();
+    rough = spec.wood ? .42 : .52; envI=.28; clear = spec.wood ? .35 : .14; nStr = spec.wood ? .85 : .45;
+    per = spec.wood ? 4 : 5;
+  }
+  else { base=plasticTexture(); rough=.55; envI=.35; nStr=.4; per=3; }
+  const map = texScaled(base, size, per);
+  const nrm = normalFromTexture(map, nStr);
+  const mk=(c)=>{
+    const p={color:c, map, normalMap:nrm, roughness:rough, metalness:metal, envMapIntensity:envI};
+    if(clear>0){ const m=new THREE.MeshPhysicalMaterial(p);
+      m.clearcoat=clear; m.clearcoatRoughness=.22; return m; }
+    return new THREE.MeshStandardMaterial(p);
+  };
+  const out = {mat: mk(col.clone()), matD: mk(col.clone().multiplyScalar(.78))};
+  _furnMatCache.set(key, out);
+  return out;
+}
+
 /* ===== 高精度建模基础件：圆角体 / 软包 / 锥形腿 / 织物·木纹贴图 ===== */
 let _fabTex=null, _fwoodTex=null;
 function fabricTexture(){
@@ -3871,6 +4218,482 @@ function rboxGeo(w,h,d,r,seg){
    坐标：原点在家具中心地面，y 向上，+z = 正面（朝房间），-z = 背面（靠墙）
    ===================================================================== */
 const MODELS = {};
+
+/* =====================================================================
+   儿童爬爬架建模工具箱
+   —— 这类产品全是「杆件 + 侧板 + 绳网 + 攀岩点」的组合，
+      先把这几件做扎实，7 个型号就都能照实物拼出来。
+   ===================================================================== */
+function pgKit(C){
+  const T = C.THREE, cm = C.cm, g = C.g;
+  const V = (p)=> new T.Vector3(p[0], p[1], p[2]);
+  const K = {};
+  /* 任意两点之间的圆棒：横档 / 圆管 / 绳 */
+  K.rod = (mat, p0, p1, r, seg)=>{
+    const a = V(p0), b = V(p1), d = new T.Vector3().subVectors(b, a), L = d.length();
+    if(L < 1e-5) return null;
+    const m = new T.Mesh(new T.CylinderGeometry(r, r, L, seg||10), mat);
+    m.position.copy(a).addScaledVector(d, 0.5);
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), d.clone().normalize());
+    m.castShadow = m.receiveShadow = true; g.add(m); return m;
+  };
+  /* 任意两点之间的方料：立柱 / 扁腿 / 横梁。w 为截面宽（绕自身轴 roll 弧度） */
+  K.beam = (mat, p0, p1, w, t, roll)=>{
+    const a = V(p0), b = V(p1), d = new T.Vector3().subVectors(b, a), L = d.length();
+    if(L < 1e-5) return null;
+    const m = new T.Mesh(new T.BoxGeometry(w, L, t), mat);
+    m.position.copy(a).addScaledVector(d, 0.5);
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), d.clone().normalize());
+    if(roll) m.rotateOnAxis(new T.Vector3(0,1,0), roll);
+    m.castShadow = m.receiveShadow = true; g.add(m); return m;
+  };
+  /* 侧板：pts 画在 (z, y) 平面上，沿 -x 方向拉厚 thick（板占 x-thick … x） */
+  K.side = (pts, thick, mat, x, y, z, bevel)=>{
+    const m = C.ext(pts, thick, mat, 0, 0, 0, 'xy', bevel);
+    m.rotation.y = -Math.PI/2;
+    m.position.set(x, y, z);
+    return m;
+  };
+  /* 横档梯：两条侧轨 + n 根圆档。a/b 是梯子下端/上端的中线端点 */
+  K.ladder = (matRail, matRung, a, b, width, n, railW, rungR)=>{
+    const A = V(a), B = V(b), d = new T.Vector3().subVectors(B, A);
+    const ax = new T.Vector3().crossVectors(d, new T.Vector3(0,1,0));
+    if(ax.lengthSq() < 1e-6) ax.set(1,0,0);
+    ax.normalize().multiplyScalar(width/2);
+    for(const s of [-1, 1])
+      K.beam(matRail, [A.x+ax.x*s, A.y+ax.y*s, A.z+ax.z*s],
+                      [B.x+ax.x*s, B.y+ax.y*s, B.z+ax.z*s], railW, railW*0.55);
+    for(let i=0;i<n;i++){
+      const t = (i+0.5)/n;
+      const p = new T.Vector3().copy(A).addScaledVector(d, t);
+      K.rod(matRung, [p.x-ax.x, p.y-ax.y, p.z-ax.z], [p.x+ax.x, p.y+ax.y, p.z+ax.z], rungR, 10);
+    }
+  };
+  /* 绳网：四角围成的矩形区域内拉经纬绳，交点打结 */
+  K.net = (mat, o, ex, ez, nx, nz, r)=>{
+    const O = V(o);
+    for(let i=0;i<=nx;i++){
+      const u = i/nx;
+      K.rod(mat, [O.x+ex[0]*u, O.y+ex[1]*u, O.z+ex[2]*u],
+                 [O.x+ex[0]*u+ez[0], O.y+ex[1]*u+ez[1], O.z+ex[2]*u+ez[2]], r, 6);
+    }
+    for(let j=0;j<=nz;j++){
+      const v = j/nz;
+      K.rod(mat, [O.x+ez[0]*v, O.y+ez[1]*v, O.z+ez[2]*v],
+                 [O.x+ez[0]*v+ex[0], O.y+ez[1]*v+ex[1], O.z+ez[2]*v+ex[2]], r, 6);
+    }
+  };
+  /* 攀岩点：彩色异形抓手（两片错位的圆角块 + 螺丝） */
+  K.hold = (i, x, y, z, nx, s)=>{
+    const PAL = [0x2f7fd6, 0x3fa93f, 0xf2c318, 0x8a3fb5, 0xe0483c, 0xe87c1e, 0xd94f9a];
+    const mt = C.M(PAL[i % PAL.length], {rough:.38, clear:.55});
+    s = s || 1;
+    const a = new T.Mesh(rboxGeo(cm(9)*s, cm(5.5)*s, cm(5)*s, cm(1.6)*s, 3), mt);
+    const b = new T.Mesh(rboxGeo(cm(6)*s, cm(4)*s, cm(6.5)*s, cm(1.6)*s, 3), mt);
+    const q = new T.Quaternion().setFromUnitVectors(new T.Vector3(0,0,1), V(nx).normalize());
+    a.position.set(x, y, z); a.quaternion.copy(q); a.translateZ(cm(2.5));
+    b.position.set(x, y, z); b.quaternion.copy(q);
+    b.translateZ(cm(3.4)); b.translateY(cm(-1.6)); b.rotateZ(0.35);
+    a.castShadow = b.castShadow = true; g.add(a); g.add(b);
+    const sc = new T.Mesh(new T.CylinderGeometry(cm(0.7), cm(0.7), cm(1.2), 8),
+      C.M(0xc9ccd2, {rough:.28, metal:.85}));
+    sc.position.set(x, y, z); sc.quaternion.copy(q); sc.rotateX(Math.PI/2); sc.translateY(cm(4.2));
+    g.add(sc);
+  };
+  /* 木螺丝/圆帽：接缝处点缀，近看不至于「一块整木」 */
+  K.screw = (mat, x, y, z, nx, r)=>{
+    const m = new T.Mesh(new T.CylinderGeometry(r, r, cm(0.5), 8), mat);
+    m.position.set(x, y, z);
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), V(nx).normalize());
+    g.add(m); return m;
+  };
+  return K;
+}
+
+/* ---- Avenlur Chestnut 8-in-1 可折叠爬爬架 ---- */
+MODELS['chestnut'] = (C)=>{
+  const K = pgKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const wood = C.M(C.col, {wood:'pine', rough:.46});
+  const woodD = C.M(new C.THREE.Color(C.col).multiplyScalar(.92), {wood:'pine', rough:.5});
+  const acc = C.col2 ? C.M(C.col2, {rough:.45, clear:.4}) : woodD;   // 彩色横杆款
+  const rope = C.M(0xe8e2d4, {rough:.95});
+  const BT = cm(3.2);                                    // 板厚
+  const frames = [-0.42, -0.06, 0.40];                   // 三榀 A 形架的 x 位置
+  // 屋脊横梁（同时是猴子架单杠）
+  K.rod(wood, [-W*0.47, H-cm(3), 0], [W*0.47, H-cm(3), 0], cm(3.0), 14);
+  // 梁上的花瓣形折叠连接盘
+  for(const fx of [-0.47,-0.30,-0.06,0.16,0.40,0.47]){
+    const p = new C.THREE.Mesh(new C.THREE.CylinderGeometry(cm(7.5), cm(7.5), cm(2.2), 16), woodD);
+    p.rotation.z = Math.PI/2; p.position.set(W*fx, H-cm(3), 0); p.castShadow=true; C.g.add(p);
+    K.screw(C.M(0x2a2c30,{rough:.4,metal:.6}), W*fx+cm(1.3), H-cm(3), 0, [1,0,0], cm(1.6));
+  }
+  // A 形架：扁腿 + 落地横撑
+  for(const fx of frames){
+    for(const sz of [-1, 1]){
+      K.beam(wood, [W*fx, H-cm(3), 0], [W*fx, cm(1.5), sz*D*0.47], cm(9), BT);
+      K.beam(woodD, [W*fx-cm(6), cm(1.5), sz*D*0.47], [W*fx+cm(6), cm(1.5), sz*D*0.47], cm(7), cm(4));
+    }
+    K.beam(wood, [W*fx, H*0.30, -D*0.33], [W*fx, H*0.30, D*0.33], cm(6), cm(3));   // 中部拉撑
+  }
+  // 落地长边纵梁
+  for(const sz of [-1, 1])
+    K.beam(woodD, [-W*0.46, cm(2.2), sz*D*0.47], [W*0.46, cm(2.2), sz*D*0.47], cm(8), cm(3.6));
+  // 左端：竖向肋木（瑞典梯）
+  for(let i=0;i<9;i++){
+    const y = cm(14) + i*(H-cm(24))/8;
+    K.beam(acc, [-W*0.47, y, -D*0.30], [-W*0.47, y, D*0.30], cm(5.5), cm(3.4));
+  }
+  for(const sz of [-1,1]) K.beam(wood, [-W*0.47, 0, sz*D*0.30], [-W*0.47, H-cm(3), sz*D*0.30], cm(8), BT);
+  // 中段：圆档梯（爬到梁上）
+  K.ladder(wood, acc, [W*0.16, cm(2), D*0.42], [W*0.16, H-cm(8), D*0.05], cm(42), 6, cm(6), cm(1.9));
+  // 右端外侧：攀岩板 + 抓手
+  const rw = D*0.52, rTop = H-cm(10), rBot = cm(4);
+  const rockX = W*0.40 + cm(6);
+  K.beam(wood, [rockX, rBot, D*0.46], [rockX, rTop, -D*0.02], rw, cm(2.6), Math.PI/2);
+  for(let i=0;i<10;i++){
+    const t = (i+0.5)/10;
+    const y = rBot + (rTop-rBot)*t, z = D*0.46 + (-D*0.48)*t;
+    K.hold(i, rockX+cm(2.2), y, z + (i%2? cm(9):-cm(9)), [1,0,0.35], 0.95);
+  }
+  // 绳网 + 吊环 + 圆盘秋千
+  K.net(rope, [W*0.02, H-cm(8), -D*0.05], [W*0.20, 0, 0], [0, -H*0.55, D*0.30], 4, 4, cm(0.9));
+  for(const sx of [-0.16, -0.10]){
+    K.rod(rope, [W*sx, H-cm(6), 0], [W*sx, H*0.42, D*0.06], cm(0.9), 6);
+    C.torus(cm(7), cm(1.6), acc, W*sx, H*0.40, D*0.06, Math.PI/2);
+  }
+  for(const sx of [-0.30, -0.24]) K.rod(rope, [W*sx, H-cm(6), 0], [W*(sx*0.96), H*0.30, D*0.10], cm(0.9), 6);
+  const disc = new C.THREE.Mesh(new C.THREE.CylinderGeometry(cm(19), cm(19), cm(3.2), 20), wood);
+  disc.position.set(-W*0.27, H*0.29, D*0.10); disc.castShadow = true; C.g.add(disc);
+  // 前方长斜坡（滑梯/爬坡两用）
+  const s0 = [-W*0.20, H*0.56, -D*0.16], s1 = [W*0.06, cm(2), D*0.52];
+  K.beam(wood, s0, s1, D*0.20, cm(2.8), Math.PI/2);
+  for(const sw of [-1, 1]){
+    const off = sw*D*0.10;
+    K.beam(woodD, [s0[0], s0[1]+cm(4), s0[2]+off], [s1[0], s1[1]+cm(4), s1[2]+off], cm(5), cm(5));
+  }
+};
+
+/* ---- Avenlur Hazel 折叠攀爬三角 + 斜坡 + 拱桥（三件套） ---- */
+MODELS['hazel'] = (C)=>{
+  const K = pgKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const wood = C.M(C.col, {wood:'pine', rough:.44});
+  const woodD = C.M(new C.THREE.Color(C.col).multiplyScalar(.9), {wood:'pine', rough:.5});
+  const acc = C.col2 ? C.M(C.col2, {rough:.42, clear:.45}) : wood;
+  const BT = cm(2.0);
+  /* 1) 右侧：攀爬三角（两片梯形侧板 + 圆档） */
+  const triX = W*0.30, triHalf = D*0.46;
+  const triPts = (s)=>[[-triHalf,0],[-triHalf+cm(5),0],[cm(3),H-cm(2)],[-cm(3),H-cm(2)],[triHalf-cm(5),0],[triHalf,0],
+                       [cm(6),H-cm(6)],[-cm(6),H-cm(6)]];
+  for(const sx of [-1, 1]){
+    // 侧板做成「人」字：两条斜腿 + 顶部圆头
+    for(const lz of [-1, 1]){
+      K.beam(wood, [triX+sx*D*0.22, cm(1), lz*triHalf], [triX+sx*D*0.22, H-cm(4), 0], cm(7), BT+cm(0.6));
+    }
+    const cap = new C.THREE.Mesh(new C.THREE.CylinderGeometry(cm(3.5), cm(3.5), BT+cm(0.6), 14), wood);
+    cap.rotation.z = Math.PI/2; cap.position.set(triX+sx*D*0.22, H-cm(4), 0); C.g.add(cap);
+    for(const lz of [-1,1]) K.screw(C.M(0xbfc3c9,{rough:.3,metal:.8}),
+      triX+sx*(D*0.22+BT*0.6), cm(6), lz*(triHalf-cm(4)), [sx,0,0], cm(1.0));
+  }
+  for(let side=0; side<2; side++){
+    const lz = side? 1 : -1;
+    for(let i=0;i<7;i++){
+      const t = (i+1)/8;
+      const y = cm(1) + (H-cm(5))*t, z = lz*triHalf*(1-t);
+      K.rod(acc, [triX-D*0.22, y, z], [triX+D*0.22, y, z], cm(1.7), 10);
+    }
+  }
+  /* 2) 中间：可翻面斜坡板（一面光滑滑梯，一面圆木攀爬点） */
+  const rTop = [W*0.06, H*0.62, 0], rBot = [-W*0.16, cm(2), 0];
+  K.beam(wood, rTop, rBot, D*0.60, cm(2.4), Math.PI/2);
+  for(const s of [-1,1]) K.beam(woodD, [rTop[0], rTop[1]+cm(2), s*D*0.29], [rBot[0], rBot[1]+cm(2), s*D*0.29], cm(3.4), cm(3.4));
+  for(let i=0;i<5;i++){
+    const t = (i+0.6)/6;
+    const x = rTop[0] + (rBot[0]-rTop[0])*t, y = rTop[1] + (rBot[1]-rTop[1])*t + cm(2.6);
+    for(const s of [-0.5, 0.5]){
+      const k = new C.THREE.Mesh(new C.THREE.CylinderGeometry(cm(4.2), cm(4.2), cm(1.8), 14), woodD);
+      k.position.set(x + (i%2? cm(3):-cm(3)), y, s*D*0.22);
+      k.rotation.x = Math.PI/2; k.rotation.z = -0.42; k.castShadow = true; C.g.add(k);
+    }
+  }
+  const hook = C.M(0xb9bdc4, {rough:.3, metal:.85});
+  for(const s of [-1,1]) K.rod(hook, [rTop[0]-cm(3), rTop[1]+cm(3), s*D*0.26], [rTop[0]+cm(5), rTop[1]+cm(6), s*D*0.26], cm(1.0), 8);
+  /* 3) 左侧：拱桥 / 摇摇板 */
+  const arcX = -W*0.34, arcR = D*0.62, arcH = H*0.86;
+  const arcPts = [];
+  const NA = 16;
+  for(let i=0;i<=NA;i++){ const a = Math.PI*i/NA; arcPts.push([Math.cos(a)*arcR, Math.sin(a)*arcH]); }
+  for(let i=NA;i>=0;i--){ const a = Math.PI*i/NA; arcPts.push([Math.cos(a)*(arcR-cm(9)), Math.sin(a)*(arcH-cm(9))]); }
+  for(const sx of [-1, 1]) K.side(arcPts, BT+cm(0.4), wood, arcX + sx*D*0.24 + (sx>0?BT:0), cm(0.4), 0);
+  for(let i=1;i<NA;i++){
+    const a = Math.PI*(i+0.0)/NA;
+    const z = Math.cos(a)*(arcR-cm(4.5)), y = Math.sin(a)*(arcH-cm(4.5)) + cm(0.4);
+    K.beam(acc, [arcX-D*0.24, y, z], [arcX+D*0.24, y, z], cm(5.5), cm(2.2), 0);
+  }
+  for(const sx of [-1,1]) for(const sz of [-1,1])
+    K.beam(woodD, [arcX+sx*D*0.24, cm(0.4), sz*(arcR-cm(2))], [arcX+sx*D*0.24, cm(3.4), sz*(arcR-cm(10))], cm(5), cm(4));
+};
+
+/* ---- Avenlur Magnolia 7-in-1 室内木质游乐架 ---- */
+MODELS['magnolia'] = (C)=>{
+  const K = pgKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const wood = C.M(C.col, {wood:'pine', rough:.44});
+  const woodD = C.M(new C.THREE.Color(C.col).multiplyScalar(.9), {wood:'pine', rough:.5});
+  const acc = C.col2 ? C.M(C.col2, {rough:.42, clear:.45}) : wood;
+  const rope = C.M(0xf0ebdd, {rough:.95});
+  const BT = cm(3.0);
+  // 梯形骨架：四条外撇扁腿（下宽上窄）
+  const topHW = W*0.40, topHD = D*0.30, botHW = W*0.49, botHD = D*0.47;
+  const legTop = [], legBot = [];
+  for(const sx of [-1,1]) for(const sz of [-1,1]){
+    const a = [sx*botHW, 0, sz*botHD], b = [sx*topHW, H-cm(4), sz*topHD];
+    K.beam(wood, a, b, cm(9), BT);
+    legTop.push(b); legBot.push(a);
+  }
+  // 顶部：一圈边框 + 横向猴子架圆档
+  for(const sz of [-1,1]) K.beam(wood, [-topHW, H-cm(4), sz*topHD], [topHW, H-cm(4), sz*topHD], cm(7), cm(4));
+  for(const sx of [-1,1]) K.beam(wood, [sx*topHW, H-cm(4), -topHD], [sx*topHW, H-cm(4), topHD], cm(7), cm(4));
+  const nBar = Math.max(5, Math.round(W*2/cm(18)));
+  for(let i=1;i<nBar;i++){
+    const x = -topHW + 2*topHW*i/nBar;
+    K.rod(wood, [x, H-cm(4), -topHD+cm(2)], [x, H-cm(4), topHD-cm(2)], cm(2.2), 10);
+  }
+  // 左侧面：圆档梯
+  K.ladder(wood, wood, [-botHW+cm(3), cm(2), -botHD*0.55], [-topHW+cm(3), H-cm(8), -topHD*0.55], D*0.52, 6, cm(7), cm(2.1));
+  // 后侧面：横档（另一面梯）
+  for(let i=0;i<5;i++){
+    const t = (i+0.7)/6, y = H*t;
+    const sx1 = -(botHW + (topHW-botHW)*t), sx2 = -sx1;
+    K.rod(wood, [sx1*0.98, y, -(botHD + (topHD-botHD)*t)*0.98], [sx2*0.98, y, -(botHD + (topHD-botHD)*t)*0.98], cm(2.1), 10);
+  }
+  // 中间：绳网 + 顶部横杆
+  K.net(rope, [-W*0.10, H-cm(9), -D*0.16], [W*0.30, 0, 0], [0, -H*0.55, D*0.10], 5, 5, cm(0.8));
+  K.rod(acc, [-W*0.10, H-cm(9), -D*0.16], [W*0.20, H-cm(9), -D*0.16], cm(2.0), 10);
+  // 右中：攀岩板 + 抓手
+  const rockX0 = W*0.10, rockX1 = W*0.34;
+  K.beam(wood, [(rockX0+rockX1)/2, cm(1), D*0.30], [(rockX0+rockX1)/2, H-cm(8), D*0.13],
+         rockX1-rockX0, cm(2.4), Math.PI/2);
+  for(let i=0;i<7;i++){
+    const t = (i+0.5)/7, y = cm(6) + (H-cm(20))*t, z = D*0.30 + (-D*0.17)*t;
+    K.hold(i, rockX0 + (rockX1-rockX0)*(i%2? 0.32:0.68), y, z + cm(3), [0,0,1], 0.9);
+  }
+  // 右端：绳梯
+  for(const s of [-1,1]) K.rod(rope, [W*0.44, H-cm(6), s*D*0.10], [W*0.47, cm(4), s*D*0.10], cm(0.9), 6);
+  for(let i=0;i<6;i++){
+    const t=(i+0.5)/6, y=H-cm(10)-(H-cm(18))*t, x=W*(0.44+0.03*t);
+    K.rod(acc, [x, y, -D*0.10], [x, y, D*0.10], cm(1.8), 10);
+  }
+  // 左侧：木板秋千
+  for(const s of [-1,1]) K.rod(rope, [-W*0.30, H-cm(6), s*D*0.09], [-W*0.30, H*0.36, s*D*0.09], cm(0.9), 6);
+  const seat = new C.THREE.Mesh(rboxGeo(cm(34), cm(3), cm(17), cm(1.2), 3), wood);
+  seat.position.set(-W*0.30, H*0.36, 0); seat.castShadow = true; C.g.add(seat);
+  // 中层小平台
+  K.beam(wood, [-W*0.05, H*0.40, -D*0.02], [W*0.10, H*0.40, D*0.16], cm(2.6), D*0.28, Math.PI/2);
+};
+
+/* ---- Avenlur Sweetgum 8-in-1 感统攀爬架 ---- */
+MODELS['sweetgum'] = (C)=>{
+  const K = pgKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const wood = C.M(C.col, {wood:'pine', rough:.44});
+  const woodD = C.M(new C.THREE.Color(C.col).multiplyScalar(.9), {wood:'pine', rough:.5});
+  const rope = C.M(0xf2ecdd, {rough:.95});
+  const black = C.M(0x1c1e22, {rough:.65});
+  const PASTEL = [0xf6c9cf, 0xf7ddb0, 0xd9e7c8, 0xbcd6ea, 0xd8cbe6, 0xf3d9a8];
+  const POST = cm(6.5);
+  // 两榀 A 形架（方料立柱）
+  const aX = [-W*0.06, W*0.30];
+  for(const ax of aX){
+    for(const sz of [-1,1]) K.beam(wood, [ax, cm(2), sz*D*0.46], [ax, H-cm(5), sz*D*0.06], POST, POST);
+    K.beam(wood, [ax, H-cm(5), -D*0.06], [ax, H-cm(5), D*0.06], POST, POST);
+  }
+  // 顶部：两条纵梁 + 板条顶棚
+  for(const sz of [-1,1]) K.beam(wood, [aX[0]-W*0.02, H-cm(5), sz*D*0.06], [aX[1]+W*0.16, H-cm(5), sz*D*0.06], cm(7), cm(5));
+  const nS = 14;
+  for(let i=0;i<=nS;i++){
+    const x = aX[0]-W*0.02 + (aX[1]+W*0.16-(aX[0]-W*0.02))*i/nS;
+    K.beam(woodD, [x, H-cm(2), -D*0.06], [x, H-cm(2), D*0.06], cm(4), cm(2.4));
+  }
+  // 地面矩形底框
+  for(const sz of [-1,1]) K.beam(woodD, [-W*0.30, cm(2.5), sz*D*0.46], [W*0.47, cm(2.5), sz*D*0.46], cm(8), cm(5));
+  for(const sx of [-0.30, 0.47]) K.beam(woodD, [W*sx, cm(2.5), -D*0.46], [W*sx, cm(2.5), D*0.46], cm(8), cm(5));
+  // 左侧：绳网 + 彩色圆环
+  K.net(rope, [aX[0]-cm(2), H-cm(8), -D*0.42], [0, 0, D*0.34], [0, -H*0.62, 0], 4, 5, cm(0.8));
+  for(let i=0;i<7;i++){
+    const t=(i+0.5)/7;
+    C.torus(cm(7), cm(1.8), C.M(PASTEL[i%PASTEL.length], {rough:.4, clear:.5}),
+      aX[0]-cm(2), H-cm(8)-H*0.55*((i*0.37)%1), -D*0.42+D*0.34*t, Math.PI/2);
+  }
+  // 中间：木板背墙（滑梯背板）
+  K.beam(wood, [W*0.10, cm(2), -D*0.04], [W*0.10, H-cm(8), -D*0.04], D*0.36, cm(2.6), Math.PI/2);
+  for(let i=1;i<6;i++) K.screw(woodD, W*0.10+cm(1.5), H*i/6, -D*0.04, [1,0,0], cm(1.1));
+  // 中间：黑色鸟巢秋千
+  for(const s of [-1,1]) K.rod(black, [W*0.10+s*cm(2), H-cm(6), D*0.06], [W*0.13+s*cm(16), H*0.30, D*0.18], cm(1.2), 8);
+  const nest = new C.THREE.Mesh(new C.THREE.TorusGeometry(cm(28), cm(3.2), 8, 26), black);
+  nest.rotation.x = Math.PI/2; nest.position.set(W*0.13, H*0.29, D*0.18); nest.castShadow=true; C.g.add(nest);
+  K.net(black, [W*0.13-cm(26), H*0.29, D*0.18-cm(26)], [cm(52),0,0], [0,0,cm(52)], 5, 5, cm(0.7));
+  // 右侧：绳梯（彩色踏板）+ 木档梯
+  for(const s of [-1,1]) K.rod(rope, [W*0.44, H-cm(6), s*D*0.12], [W*0.47, cm(4), s*D*0.12], cm(0.9), 6);
+  for(let i=0;i<7;i++){
+    const t=(i+0.5)/7, y=H-cm(12)-(H-cm(20))*t;
+    K.beam(C.M(PASTEL[i%PASTEL.length], {rough:.45, clear:.45}),
+      [W*(0.44+0.03*t), y, -D*0.12], [W*(0.44+0.03*t), y, D*0.12], cm(6), cm(2.4), 0);
+  }
+  K.ladder(wood, wood, [W*0.34, cm(2), D*0.30], [W*0.30, H-cm(10), D*0.06], D*0.26, 5, cm(6), cm(2.0));
+  // 左前：圆木斜坡
+  const p0=[aX[0]-cm(4), H*0.34, -D*0.20], p1=[-W*0.44, cm(3), -D*0.30];
+  for(const s of [-1,1]) K.beam(wood, [p0[0], p0[1], p0[2]+s*D*0.17], [p1[0], p1[1], p1[2]+s*D*0.17], cm(5), cm(7));
+  const nR = 22;
+  for(let i=0;i<=nR;i++){
+    const t=i/nR;
+    const x=p0[0]+(p1[0]-p0[0])*t, y=p0[1]+(p1[1]-p0[1])*t+cm(2.5), z=p0[2]+(p1[2]-p0[2])*t;
+    K.rod(woodD, [x, y, z-D*0.16], [x, y, z+D*0.16], cm(1.7), 8);
+  }
+  // 小平台 + 三角托板
+  K.beam(wood, [aX[0]+W*0.03, H*0.34, -D*0.10], [aX[0]+W*0.03, H*0.34, D*0.02], W*0.16, cm(2.6), Math.PI/2);
+};
+
+
+/* ---- QUADRO 模块化管件系统：彩色塑料管 + 黑色接头 + 彩色面板 ---- */
+function qKit(C){
+  const T = C.THREE, cm = C.cm, g = C.g, K = pgKit(C);
+  const PAL = {r:0xd41b12, y:0xf7c800, g:0x008a37, b:0x0050a0, dg:0x005c26};
+  const M = {};
+  // 注意：clearcoat + 高 envMapIntensity 会给彩色塑料罩一层白，颜色直接变粉彩色
+  for(const k in PAL) M[k] = C.M(PAL[k], {rough:.30, clear:.22, clearRough:.10, envI:.22, plastic:true});
+  M.node = C.M(0x121316, {rough:.52, envI:.25, plastic:true});
+  const TR = cm(2.0), NR = cm(2.9);            // 管半径 / 接头半尺寸
+  const Q = {M, TR, NR, K};
+  /* 一根管：胶囊管身 + 两端黑色立方接头 */
+  Q.tube = (c, p0, p1)=>{
+    K.rod(M[c] || M.r, p0, p1, TR, 9);
+    for(const p of [p0, p1]){
+      const n = new T.Mesh(new T.BoxGeometry(NR*2, NR*2, NR*2), M.node);   // 接头用简单盒子：数量多，倒角开销不值
+      n.position.set(p[0], p[1], p[2]); n.castShadow = true; g.add(n);
+    }
+  };
+  /* 一块面板：带边框的方板。plane: 'xz'(水平) | 'xy' | 'zy' */
+  Q.panel = (c, cx, cy, cz, sx, sz, plane)=>{
+    const t = cm(1.6);
+    const dims = plane === 'xy' ? [sx, sz, t] : plane === 'zy' ? [t, sz, sx] : [sx, t, sz];
+    const m = new T.Mesh(new T.BoxGeometry(dims[0], dims[1], dims[2]), M[c] || M.r);
+    m.position.set(cx, cy, cz); m.castShadow = m.receiveShadow = true; g.add(m);
+    // 面板中央的 QUADRO 压印（一小片深色圆角块）
+    const lg = new T.Mesh(new T.BoxGeometry(Math.min(sx,sz)*0.34, cm(0.4), Math.min(sx,sz)*0.16),
+      C.M(0x7a1410, {rough:.6}));
+    if(plane === 'xz'){ lg.position.set(cx, cy + t/2 + cm(0.2), cz); g.add(lg); }
+    return m;
+  };
+  /* 圆盘（方向盘 / 装饰轮） */
+  Q.wheel = (c, x, y, z, r, axis)=>{
+    const m = new T.Mesh(new T.CylinderGeometry(r, r, cm(2.2), 22), M[c] || M.y);
+    m.position.set(x, y, z);
+    if(axis === 'x') m.rotation.z = Math.PI/2; else if(axis === 'z') m.rotation.x = Math.PI/2;
+    m.castShadow = true; g.add(m);
+    const hub = new T.Mesh(new T.CylinderGeometry(r*0.16, r*0.16, cm(3.0), 12), M.r);
+    hub.position.copy(m.position); hub.rotation.copy(m.rotation); g.add(hub);
+    for(let i=0;i<4;i++){
+      const sp = new T.Mesh(new T.BoxGeometry(r*1.5, cm(2.4), cm(2.0)), M[c] || M.y);
+      sp.position.copy(m.position); sp.rotation.copy(m.rotation); sp.rotateY(i*Math.PI/4); g.add(sp);
+    }
+  };
+  /* 一圈矩形框（四根管） */
+  Q.ring = (cols, y, x0, x1, z0, z1)=>{
+    Q.tube(cols[0], [x0,y,z0], [x1,y,z0]);
+    Q.tube(cols[1], [x1,y,z0], [x1,y,z1]);
+    Q.tube(cols[2], [x1,y,z1], [x0,y,z1]);
+    Q.tube(cols[3], [x0,y,z1], [x0,y,z0]);
+  };
+  return Q;
+}
+
+/* QUADRO A0164 厨房学习塔 65×45×85 */
+MODELS['qriser'] = (C)=>{
+  const Q = qKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const x0 = -W/2 + Q.NR, x1 = W/2 - Q.NR, z0 = -D/2 + Q.NR, z1 = D/2 - Q.NR;
+  const yb = Q.NR, ym = H*0.42, yt = H - Q.NR;
+  Q.ring(['y','b','g','r'], yb, x0, x1, z0, z1);          // 落地框
+  Q.ring(['r','b','y','g'], ym, x0, x1, z0, z1);          // 站板层框
+  Q.ring(['y','b','g','y'], yt, x0, x1, z0, z1);          // 顶部扶手框
+  for(const [sx, sz, c] of [[x0,z0,'y'],[x1,z0,'r'],[x1,z1,'b'],[x0,z1,'g']])
+    Q.tube(c, [sx, yb, sz], [sx, yt, sz]);                // 四角立柱
+  Q.tube('g', [x0, ym, z0], [x0, ym, z1]);                // 站板托梁
+  Q.panel('r', 0, ym + cm(1.2), 0, (x1-x0)-cm(1), (z1-z0)-cm(1), 'xz');
+  Q.tube('g', [x0, yb, z1], [x0 - W*0.28, yb, z1]);       // 防倾外伸脚
+  Q.tube('r', [x0 - W*0.28, yb, z1], [x0 - W*0.28, yb, z0]);
+  Q.tube('y', [x0 - W*0.28, yb, z0], [x0, yb, z0]);
+};
+
+/* QUADRO A0294 儿童手工大桌 165×125×98 */
+MODELS['qcraft'] = (C)=>{
+  const Q = qKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  const x0 = -W/2 + Q.NR, x1 = W*0.20, z0 = -D/2 + Q.NR, z1 = D/2 - Q.NR;
+  const yb = Q.NR, yT = H*0.52, yBack = H - Q.NR, ySide = H*0.30;
+  Q.ring(['y','b','g','r'], yb, x0, x1, z0, z1);                    // 落地框
+  Q.ring(['g','y','b','r'], yT, x0, x1, z0, z1);                    // 桌面框
+  for(const [sx, sz, c] of [[x0,z0,'r'],[x1,z0,'b'],[x1,z1,'y'],[x0,z1,'g']])
+    Q.tube(c, [sx, yb, sz], [sx, yT, sz]);                          // 桌腿
+  Q.tube('y', [x0, yT, 0], [x1, yT, 0]);                            // 桌面中梁
+  const cols = ['g','b','r','y','g','r'];
+  for(let i=0;i<3;i++) for(let j=0;j<2;j++)                          // 3×2 彩色台面
+    Q.panel(cols[i*2+j], x0 + (x1-x0)*(i+0.5)/3, yT + cm(1.2), z0 + (z1-z0)*(j+0.5)/2,
+            (x1-x0)/3 - cm(1), (z1-z0)/2 - cm(1), 'xz');
+  // 后侧立起的高框 + 两个圆盘
+  for(const sz of [z0, z1]) Q.tube('g', [x0, yT, sz], [x0, yBack, sz]);
+  Q.tube('y', [x0, yBack, z0], [x0, yBack, z1]);
+  Q.tube('b', [x0, yBack, z1], [x0 + W*0.16, yBack, z1]);
+  Q.wheel('y', x0 + cm(3), yBack + cm(1), z0 + D*0.22, cm(17), 'x');
+  Q.wheel('r', x0 + cm(3), yBack - cm(6), z1 - D*0.12, cm(17), 'x');
+  // 右侧矮台（坐凳 / 置物）
+  const ex = W/2 - Q.NR;
+  Q.ring(['b','g','y','r'], yb, x1, ex, z0, z1);
+  Q.ring(['y','r','g','b'], ySide, x1, ex, z0, z1);
+  for(const sz of [z0, z1]) Q.tube('b', [ex, yb, sz], [ex, ySide, sz]);
+  Q.panel('y', (x1+ex)/2, ySide + cm(1.2), z0 + (z1-z0)*0.28, (ex-x1)-cm(1), (z1-z0)*0.5, 'xz');
+  Q.panel('b', (x1+ex)/2, ySide + cm(1.2), z0 + (z1-z0)*0.76, (ex-x1)-cm(1), (z1-z0)*0.42, 'xz');
+};
+
+/* QUADRO A0140 大塔 + 超长滑梯 188×125×165 */
+MODELS['qtower'] = (C)=>{
+  const Q = qKit(C), cm = C.cm, W = C.w, D = C.d, H = C.h;
+  // ---- 右侧塔身 ----
+  const tx0 = W*0.10, tx1 = W/2 - Q.NR, tz0 = -D/2 + Q.NR, tz1 = D/2 - Q.NR;
+  const yb = Q.NR, yDeck = H*0.42, yMid = H*0.66, yTop = H - Q.NR;
+  Q.ring(['y','b','g','r'], yb,    tx0, tx1, tz0, tz1);
+  Q.ring(['r','y','b','g'], yDeck, tx0, tx1, tz0, tz1);
+  Q.ring(['g','r','y','b'], yMid,  tx0, tx1, tz0, tz1);
+  Q.ring(['b','g','r','y'], yTop,  tx0, tx1, tz0, tz1);
+  const corners = [[tx0,tz0,'r'],[tx1,tz0,'y'],[tx1,tz1,'b'],[tx0,tz1,'g']];
+  for(const [sx,sz,c] of corners) Q.tube(c, [sx, yb, sz], [sx, yTop, sz]);
+  Q.panel('b', (tx0+tx1)/2, yb + H*0.10, (tz0+tz1)/2, (tx1-tx0)-cm(1), (tz1-tz0)-cm(1), 'xz');   // 低层踏板
+  Q.panel('r', (tx0+tx1)/2, yDeck + cm(1.2), (tz0+tz1)/2, (tx1-tx0)-cm(1), (tz1-tz0)-cm(1), 'xz'); // 出发平台
+  Q.panel('dg', tx1 - cm(1), yMid - H*0.12, (tz0+tz1)/2, (tz1-tz0)-cm(2), H*0.22, 'zy');           // 侧挡板
+  // 塔顶护栏
+  Q.tube('y', [tx0, yTop, tz0], [tx0, yTop, tz1]);
+  Q.tube('g', [tx0, yMid, tz0], [tx1, yMid, tz0]);
+  // ---- 左侧超长滑梯 ----
+  const sTopX = tx0, sBotX = -W/2 + Q.NR;
+  const sTopY = yDeck, sBotY = yb;
+  const shw = D*0.34;                                     // 半宽
+  const cols = ['b','g','y','r'];
+  for(let i=0;i<4;i++){
+    const t0 = i/4, t1 = (i+1)/4;
+    const cx = sTopX + (sBotX - sTopX)*(t0+t1)/2;
+    const cy = sTopY + (sBotY - sTopY)*(t0+t1)/2 + cm(2);
+    const seg = Math.hypot((sBotX-sTopX)/4, (sBotY-sTopY)/4);
+    const p = Q.panel(cols[i], cx, cy, 0, seg, shw*2, 'xz');
+    p.rotation.z = Math.atan2(-(sBotY-sTopY), -(sBotX-sTopX)) + Math.PI;
+  }
+  for(const sz of [-1, 1]){                               // 滑梯两侧护边
+    Q.tube('y', [sTopX, sTopY + cm(9), sz*shw], [ (sTopX+sBotX)/2, (sTopY+sBotY)/2 + cm(9), sz*shw]);
+    Q.tube('b', [(sTopX+sBotX)/2, (sTopY+sBotY)/2 + cm(9), sz*shw], [sBotX, sBotY + cm(9), sz*shw]);
+    Q.tube('g', [sBotX, sBotY + cm(9), sz*shw], [sBotX, sBotY, sz*shw]);
+  }
+  Q.tube('r', [sBotX, yb, -shw], [sBotX, yb, shw]);
+  Q.tube('y', [(sTopX+sBotX)/2, yb, -shw], [(sTopX+sBotX)/2, yb, shw]);   // 中支撑
+  for(const sz of [-1,1]) Q.tube('g', [(sTopX+sBotX)/2, yb, sz*shw],
+                                     [(sTopX+sBotX)/2, (sTopY+sBotY)/2, sz*shw]);
+  Q.wheel('y', (sTopX+sBotX)*0.42, yb + H*0.16, shw + cm(3), cm(20), 'z');
+};
+
 /* ===== 逐商品模型：由官网商品图逐件建模（2026-09） ===== */
 MODELS['ps2026-tbl'] = (C) => {
   const cm=C.cm, TH=C.THREE, W=C.w, D=C.d, H=C.h;
@@ -4415,7 +5238,7 @@ MODELS['raskog'] = (C) => {
   const emit = (shape, depth, bev, mat, y0) => {
     const geo = new T.ExtrudeGeometry(shape, {depth: Math.max(0.004, depth - 2 * bev),
       bevelEnabled: bev > 0, bevelSize: bev, bevelThickness: bev, bevelSegments: 2,
-      curveSegments: 7, steps: 1});
+      curveSegments: 5, steps: 1});
     geo.rotateX(-Math.PI / 2); geo.computeVertexNormals();
     const mm = new T.Mesh(geo, mat);
     mm.position.set(0, y0 + bev, 0);
@@ -4430,7 +5253,7 @@ MODELS['raskog'] = (C) => {
   const meshFloor = (a, b, t, mat, y0) => {
     const sh = new T.Shape(); rrPath(sh, a, b, cm(1.4));
     const mx = a * 2 - cm(4.6), mz = b * 2 - cm(4.6);
-    const nx = Math.max(3, Math.round(mx / cm(3.3))), nz = Math.max(3, Math.round(mz / cm(3.3)));
+    const nx = Math.max(3, Math.round(mx / cm(4.3))), nz = Math.max(3, Math.round(mz / cm(4.3)));   // 孔距放稀：原来 3.3cm 一件就 45k 面
     const px = mx / nx, pz = mz / nz, rx = px * 0.43, rz = pz * 0.43;
     for (let i = 0; i < nx; i++) for (let j = 0; j < nz; j++) {
       const cx = -mx / 2 + (i + 0.5) * px, cz = -mz / 2 + (j + 0.5) * pz;
@@ -4694,7 +5517,7 @@ MODELS['kallax-d'] = (C) => {
 };
 /* Wunderkids 折叠爬行垫：4cm 厚软垫，中央折线，素皮面半亚光 */
 MODELS['wk-mat'] = (C) => {
-  const skin = C.M(C.col, {rough:.55, clear:.30, clearRough:.45});
+  const skin = C.M(C.col, {leather:true, rough:.62, clear:.14, clearRough:.55, envI:.22});  // 硅胶涂层素皮面
   const edge = C.M(C.col2 || C.col, {rough:.62});
   const t=C.h, hw=C.w/2, hd=C.d/2, gap=C.cm(0.5);
   for(const sx of [-1,1]){
@@ -4779,10 +5602,26 @@ function modelCtx(g, spec, col, col2, matlib){
     /* 材质工厂：M(色, {rough, metal, clear, sheen, fabric, wood}) */
     M(color, o){ o=o||{};
       const p = {color:new THREE.Color(color), roughness:(o.rough==null?.7:o.rough), metalness:o.metal||0};
-      if(o.fabric){ p.map=fabricTexture(); p.roughness=(o.rough==null?.95:o.rough); p.envMapIntensity=.25; }
+      if(o.envI!=null) p.envMapIntensity=o.envI;
+      if(o.plastic){ p.map=plasticTexture(); p.normalMap=normalFromTexture(plasticTexture(),0.35);
+                     if(o.envI==null) p.envMapIntensity=.32; }
+      if(o.fabric){ p.map=fabricTexture(); p.roughness=(o.rough==null?.95:o.rough); p.envMapIntensity=(o.envI==null?.25:o.envI); }
+      if(o.leather){ p.map=leatherTexture(); p.normalMap=normalFromTexture(leatherTexture(),1.1);
+                     p.roughness=(o.rough==null?.55:o.rough); if(o.envI==null) p.envMapIntensity=.35; }
       if(o.wood){ const tx=woodSpecies(typeof o.wood==='string'?o.wood:(spec.wood||'oak'));
         p.map=tx; p.normalMap=normalFromTexture(tx,0.85);
-        p.roughness=(o.rough==null?.42:o.rough); if(o.clear==null) o.clear=.38; }
+        p.roughness=(o.rough==null?.42:o.rough); if(o.clear==null) o.clear=.38;
+        if(o.envI==null) p.envMapIntensity=.6; }
+      // 兜底：任何没显式指定贴图的材质也给一张极淡的微表面贴图。
+      // 纯色平面在近景和光追里一眼假，而这几张贴图都接近白色，几乎不改变原有配色。
+      if(!p.map && !o.flat){
+        const base = (o.metal||0) >= 0.5 ? brushedSteelTexture()
+                   : (o.metal||0) > 0    ? powderCoatTexture()
+                   : laminateTexture();
+        p.map = base;
+        p.normalMap = normalFromTexture(base, (o.metal||0)>=0.5 ? 0.30 : 0.35);
+        if(p.envMapIntensity==null) p.envMapIntensity = (o.metal||0)>=0.5 ? .85 : .32;
+      }
       if(o.clear!=null || o.sheen!=null){
         const mm=new THREE.MeshPhysicalMaterial(p);
         if(o.clear!=null){ mm.clearcoat=o.clear; mm.clearcoatRoughness=(o.clearRough==null?.18:o.clearRough); }
@@ -4847,11 +5686,43 @@ function modelCtx(g, spec, col, col2, matlib){
   return C;
 }
 /* 家具 3D 造型工厂 */
+
+/* 贴图兜底：各 kind 分支里就地 new 出来的材质很容易漏贴图（实测漏了十几处）。
+   建完模统一扫一遍，按金属度补一张极淡的微表面贴图 + 法线贴图。
+   玻璃、纯自发光件跳过；已有贴图的只补法线。
+   要显式退出的话，给材质挂 userData.noTex / noNrm。 */
+function ensureTextured(root){
+  root.traverse(o=>{
+    if(!o.isMesh || !o.material) return;
+    const list = Array.isArray(o.material) ? o.material : [o.material];
+    for(const m of list){
+      if(!m || m.isMeshBasicMaterial) continue;
+      if(m.transparent && m.opacity != null && m.opacity < 0.8) continue;      // 玻璃
+      if(m.emissiveIntensity != null && m.emissiveIntensity >= 1.5) continue;  // 发光面
+      const metal = m.metalness || 0;
+      if(!m.map && !(m.userData && m.userData.noTex)){
+        const base = metal >= 0.5 ? brushedSteelTexture()
+                   : metal > 0    ? powderCoatTexture()
+                   : laminateTexture();
+        m.map = base;
+        if(m.envMapIntensity == null || m.envMapIntensity === 1)
+          m.envMapIntensity = metal >= 0.5 ? .85 : .32;
+        m.needsUpdate = true;
+      }
+      if(m.map && !m.normalMap && !(m.userData && m.userData.noNrm)){
+        m.normalMap = normalFromTexture(m.map, metal >= 0.5 ? .30 : .45);
+        m.needsUpdate = true;
+      }
+    }
+  });
+  return root;
+}
+
 function furn3D(it, spec){
   const wf=cm2ft(spec.w), df=cm2ft(spec.d), hf=cm2ft(spec.h);
   const col = new THREE.Color(itemColor(it));
-  const mat = new THREE.MeshStandardMaterial({color:col, roughness:.85});
-  const matD = new THREE.MeshStandardMaterial({color:col.clone().multiplyScalar(.75), roughness:.85});
+  const _fm = furnMats(spec, col);              // 按 kind 选贴图/粗糙度/环境反射（见 furnMats）
+  const mat = _fm.mat, matD = _fm.matD;
   const g = new THREE.Group();
   const box=(w,h,d,m,x=0,y=0,z=0)=>{
     const mm=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), m||mat);
@@ -4871,15 +5742,23 @@ function furn3D(it, spec){
       wood: (()=>{ const tx=woodSpecies(spec.wood||'oak');
               return new THREE.MeshPhysicalMaterial({map:tx, normalMap:normalFromTexture(tx,0.85),
                 color:col, roughness:.40, clearcoat:.40, clearcoatRoughness:.20, envMapIntensity:.7}); })(),
-      chrome:new THREE.MeshStandardMaterial({color:0xc6cad0, roughness:.14, metalness:.94}),
-      steel: new THREE.MeshStandardMaterial({color:0x9aa0a6, roughness:.35, metalness:.75}),
-      black: new THREE.MeshStandardMaterial({color:0x24262a, roughness:.44, metalness:.5}),
-      white: new THREE.MeshStandardMaterial({color:0xeeece7, roughness:.55}),
-      plastic:new THREE.MeshStandardMaterial({color:0x33363b, roughness:.6}),
+      chrome:new THREE.MeshStandardMaterial({color:0xc6cad0, roughness:.14, metalness:.94,
+        map:brushedSteelTexture(), normalMap:normalFromTexture(brushedSteelTexture(),0.25), envMapIntensity:.95}),
+      steel: new THREE.MeshStandardMaterial({color:0x9aa0a6, roughness:.35, metalness:.75,
+        map:brushedSteelTexture(), normalMap:normalFromTexture(brushedSteelTexture(),0.35), envMapIntensity:.8}),
+      black: new THREE.MeshStandardMaterial({color:0x24262a, roughness:.44, metalness:.5,
+        map:powderCoatTexture(), normalMap:normalFromTexture(powderCoatTexture(),0.45), envMapIntensity:.5}),
+      white: new THREE.MeshStandardMaterial({color:0xeeece7, roughness:.55,
+        map:laminateTexture(), normalMap:normalFromTexture(laminateTexture(),0.4), envMapIntensity:.3}),
+      plastic:new THREE.MeshStandardMaterial({color:0x33363b, roughness:.6,
+        map:plasticTexture(), normalMap:normalFromTexture(plasticTexture(),0.35), envMapIntensity:.32}),
+      leather:new THREE.MeshStandardMaterial({color:0x8a6b52, roughness:.55,
+        map:leatherTexture(), normalMap:normalFromTexture(leatherTexture(),1.1), envMapIntensity:.35}),
       glass: new THREE.MeshPhysicalMaterial({color:0xaecbe0, transparent:true, opacity:.28, roughness:.06, metalness:.05}),
     };
     try{
       MODELS[modelKey](modelCtx(g, spec, col, col2, matlib));
+      ensureTextured(g);
       mergeByMaterial(g);
       g.position.set(it.x, 0, it.y);
       g.rotation.y = -(it.rot||0)*Math.PI/180;
@@ -5142,8 +6021,7 @@ function furn3D(it, spec){
       break;
     }
     case 'shelf': {                                   // KALLAX 格子架
-      const bd=new THREE.MeshStandardMaterial({color:col, roughness:.62});
-      const bdI=new THREE.MeshStandardMaterial({color:col.clone().multiplyScalar(.9), roughness:.7});
+      const bd=mat, bdI=matD;
       const T=cm2ft(3.9);
       const cols=Math.max(1,Math.round(wf/cm2ft(39))), rows=Math.max(1,Math.round(hf/cm2ft(39)));
       box(wf, hf, T, bdI, 0, 0, -df/2+T/2);                               // 背板
@@ -5251,25 +6129,102 @@ function furn3D(it, spec){
       break;
     }
     case 'tvBench': {
-      box(wf, hf, df, mat);
+      const T=cm2ft(1.8), PL=cm2ft(2.5);                            // 板厚 / 踢脚高
+      const hM=new THREE.MeshStandardMaterial({color:0xb4b8be, roughness:.3, metalness:.8});
+      const body=hf-PL;
+      box(T, body, df, mat, -(wf/2-T/2), PL, 0);
+      box(T, body, df, mat,  (wf/2-T/2), PL, 0);
+      box(wf-2*T, T, df, mat, 0, hf-T, 0);
+      box(wf-2*T, T, df, mat, 0, PL, 0);
+      box(wf-2*T, body-2*T, cm2ft(0.5), matD, 0, PL+T, -(df/2-cm2ft(0.25)));
+      const nD=Math.max(2, Math.round(wf/cm2ft(60)));               // 门数
+      const dw=(wf-2*T-cm2ft(0.6)*(nD+1))/nD, dh=body-2*T-cm2ft(1.2);
+      for(let i=0;i<nD;i++){
+        const x=-(wf/2-T)+cm2ft(0.6)+dw/2+i*(dw+cm2ft(0.6));
+        box(dw, dh, cm2ft(1.6), mat, x, PL+T+cm2ft(0.6), df/2-cm2ft(0.8));
+        box(dw*0.42, cm2ft(1.0), cm2ft(1.0), hM, x, PL+T+dh*0.82, df/2+cm2ft(0.5));   // 长条拉手
+      }
+      box(wf-cm2ft(6), PL, df-cm2ft(6), matD, 0, 0, 0);             // 内缩踢脚
       box(Math.min(wf-.5,4.8), 2.5, .1, new THREE.MeshStandardMaterial({color:0x0a0a0c, roughness:.3}), 0, hf+.35, 0); // 电视
       break;
     }
-    case 'dresser': case 'nightstand': case 'shoeCab': {
-      box(wf,hf,df,mat);
-      const n = kind==='nightstand'?2: Math.max(2,Math.round(hf/1.1));
-      for(let i=0;i<n;i++){ box(wf-.15,.04,.02, matD, 0, (i+.6)*hf/n, df/2+.01); }
+    case 'shoeCab': {                                   // STÄLL / TRONES：翻斗门，门板下缘外倾
+      const T=cm2ft(1.6), hM=new THREE.MeshStandardMaterial({color:0xb4b8be, roughness:.3, metalness:.8});
+      box(wf, hf, df-cm2ft(3), mat, 0, 0, -cm2ft(1.5));             // 柜体（浅一点给门板留位）
+      const n=Math.max(1, Math.round(hf/cm2ft(35)));
+      const fh=(hf-cm2ft(1.2)*(n+1))/n;
+      for(let i=0;i<n;i++){
+        const y=cm2ft(1.2)+i*(fh+cm2ft(1.2));
+        const dr=box(wf-cm2ft(2.4), fh, cm2ft(1.8), mat, 0, y, df/2-cm2ft(2.2));
+        dr.rotation.x=-0.055;                                       // 翻斗门微微外倾
+        dr.position.z += cm2ft(0.9);
+        box(wf*0.30, cm2ft(0.9), cm2ft(0.9), hM, 0, y+fh*0.80, df/2-cm2ft(0.7));
+      }
+      break;
+    }
+    case 'dresser': case 'nightstand': {                 // 真抽屉面板：有缝、有把手、面板凸出柜体
+      const T=cm2ft(1.8), REV=cm2ft(0.7);                           // 板厚 / 抽屉缝
+      const hM=new THREE.MeshStandardMaterial({color:0xb4b8be, roughness:.3, metalness:.8});
+      const bodyD=df-cm2ft(2.2);
+      box(T, hf, bodyD, mat, -(wf/2-T/2), 0, -cm2ft(1.1));
+      box(T, hf, bodyD, mat,  (wf/2-T/2), 0, -cm2ft(1.1));
+      box(wf, T, bodyD, mat, 0, hf-T, -cm2ft(1.1));                 // 台面
+      box(wf-2*T, T, bodyD, mat, 0, 0, -cm2ft(1.1));
+      box(wf-2*T, hf-T, cm2ft(0.5), matD, 0, 0, -(df/2-cm2ft(0.25)));
+      const n = kind==='nightstand' ? Math.max(1,Math.round(hf/cm2ft(26)))
+                                    : Math.max(2,Math.round(hf/cm2ft(24)));
+      const fh=(hf-T-REV*(n+1))/n;
+      for(let i=0;i<n;i++){
+        const y=REV+i*(fh+REV);
+        box(wf-2*REV, fh, cm2ft(2.0), mat, 0, y, df/2-cm2ft(1.0));  // 抽屉面板
+        // 长条拉手（两端有支脚）
+        const hw=Math.min(wf*0.42, cm2ft(38));
+        box(hw, cm2ft(0.9), cm2ft(0.9), hM, 0, y+fh*0.55, df/2+cm2ft(0.55));
+        for(const sx of [-1,1]) box(cm2ft(0.8), cm2ft(0.8), cm2ft(1.1), hM,
+          sx*hw*0.44, y+fh*0.55-cm2ft(0.05), df/2+cm2ft(0.15));
+      }
       break;
     }
     case 'bookcase': {
-      box(wf,hf,df,mat);
-      const shelves = Math.max(2,Math.round(hf/1.2));
-      for(let i=1;i<shelves;i++) box(wf-.1,.05,df-.1, matD, 0, i*hf/shelves, .02);
+      if(spec.glassShelf){                              // VITTSJÖ：黑钢方管 + 钢化玻璃层板
+        const st=new THREE.MeshStandardMaterial({color:col, roughness:.38, metalness:.72});
+        const gl=new THREE.MeshPhysicalMaterial({color:0xbcd6e6, transparent:true, opacity:.24,
+                   roughness:.05, metalness:.05});
+        const P0=cm2ft(2.2);                            // 立柱截面
+        for(const sx of [-1,1]) for(const sz of [-1,1])
+          box(P0,hf,P0, st, sx*(wf/2-P0/2), 0, sz*(df/2-P0/2));
+        const n=4;                                      // 4 层玻璃（含顶板）
+        for(let i=0;i<n;i++){
+          const y = (i===0? cm2ft(2) : hf*i/(n-1) - cm2ft(1.0));
+          box(wf-2*P0, cm2ft(1.4), P0, st, 0, y, -(df/2-P0/2));   // 前后横撑
+          box(wf-2*P0, cm2ft(1.4), P0, st, 0, y,  (df/2-P0/2));
+          box(wf-2*P0-cm2ft(0.4), cm2ft(0.8), df-2*P0-cm2ft(0.4), gl, 0, y+cm2ft(1.4), 0);
+        }
+        for(const sz of [-1,1]) box(cm2ft(1.2), cm2ft(1.2), df-2*P0, st, -(wf/2-P0/2), hf-cm2ft(1.2), 0*sz);
+        break;
+      }
+      // BILLY 式板式书柜：两侧板 + 顶底板 + 薄背板围出真正的内腔，层板嵌在腔内
+      const T=cm2ft(1.8), BT=cm2ft(0.5);
+      const backM=new THREE.MeshStandardMaterial({color:col.clone().multiplyScalar(.88), roughness:.9});
+      box(T, hf, df, mat, -(wf/2-T/2), 0, 0);                       // 左侧板
+      box(T, hf, df, mat,  (wf/2-T/2), 0, 0);                       // 右侧板
+      box(wf-2*T, T, df, mat, 0, hf-T, 0);                          // 顶板
+      box(wf-2*T, T, df, mat, 0, 0, 0);                             // 底板
+      box(wf-2*T, hf-2*T, BT, backM, 0, T, -(df/2-BT/2));           // 背板
+      const inner=hf-2*T, ST=cm2ft(1.6);
+      const nBay=Math.max(2, Math.round(inner/cm2ft(34)));          // BILLY 层高约 34cm
+      const gap=(inner-ST*(nBay-1))/nBay;
+      for(let i=1;i<nBay;i++){
+        const y=T + i*gap + (i-1)*ST;
+        box(wf-2*T-cm2ft(0.3), ST, df-BT-cm2ft(1.2), mat, 0, y, cm2ft(0.6));
+      }
       break;
     }
     case 'rug': {
-      const mm = new THREE.Mesh(new THREE.BoxGeometry(wf,.06,df), new THREE.MeshStandardMaterial({color:col, roughness:1}));
+      const mm = new THREE.Mesh(new THREE.BoxGeometry(wf,.06,df), mat);   // 绒面贴图 + 强法线
       mm.position.y=.03; mm.receiveShadow=true; g.add(mm);
+      const edge = new THREE.Mesh(rboxGeo(wf+cm2ft(0.6), .045, df+cm2ft(0.6), cm2ft(0.3), 2), matD);
+      edge.position.y=.022; edge.receiveShadow=true; g.add(edge);          // 包边
       break;
     }
     case 'lamp': {
@@ -5281,6 +6236,7 @@ function furn3D(it, spec){
     }
     default: box(wf,hf,df,mat);
   }
+  ensureTextured(g);
   mergeByMaterial(g);
   g.position.set(it.x, 0, it.y);
   g.rotation.y = -it.rot*Math.PI/180;
@@ -5349,6 +6305,165 @@ function foldText(s){
   if(_foldCache.size<4000) _foldCache.set(s, v);            // 逐字输入会产生很多临时串，封顶
   return v;
 }
+
+/* =====================================================================
+   目录缩略图：把每件家具用独立的小 renderer 渲成 3/4 视角小图，
+   替掉原来那个纯色块。按需渲染（滚动到可视区才画）+ 结果缓存，
+   所以开局不会卡；搜索重建列表时直接命中缓存。
+   ===================================================================== */
+const THUMB_W = 132, THUMB_H = 108;
+let _thumbGL = null, _thumbDead = false;
+function thumbGL(){
+  if(_thumbGL || _thumbDead) return _thumbGL;
+  try{
+    const cv = document.createElement('canvas'); cv.width = THUMB_W; cv.height = THUMB_H;
+    const r = new THREE.WebGLRenderer({canvas:cv, antialias:true, alpha:true, preserveDrawingBuffer:true});
+    r.setPixelRatio(1); r.setSize(THUMB_W, THUMB_H, false);
+    r.outputEncoding = THREE.sRGBEncoding;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.0;
+    r.physicallyCorrectLights = false;          // 缩略图要的是看清造型，不是物理正确
+    const scene = new THREE.Scene();
+    // 注意：physicallyCorrectLights=false 时 three 会把光照乘 π 作补偿，
+    // 按物理直觉给的强度会高出三倍多——浅色件直接推成纯白，
+    // 沙色和石灰色两个配色的缩略图看起来一模一样。这组数是实测调出来的。
+    scene.add(new THREE.AmbientLight(0xffffff, 0.22));
+    scene.add(new THREE.HemisphereLight(0xe6effc, 0x8e8578, 0.28));
+    const k = new THREE.DirectionalLight(0xfff6e8, 0.55); k.position.set(4, 7, 6); scene.add(k);
+    const f = new THREE.DirectionalLight(0xd8e8ff, 0.18); f.position.set(-5, 2, -4); scene.add(f);
+    const cam = new THREE.PerspectiveCamera(28, THUMB_W/THUMB_H, 0.02, 400);
+    _thumbGL = {r, cv, scene, cam};
+  }catch(e){ _thumbDead = true; console.warn('缩略图渲染器不可用:', e.message); }
+  return _thumbGL;
+}
+const _thumbCache = new Map();
+function furnThumb(spec){
+  if(_thumbCache.has(spec.id)) return _thumbCache.get(spec.id);
+  let url = null;
+  const G = thumbGL();
+  if(G){
+    let g = null;
+    try{
+      g = furn3D({uid:-1, ref:spec.id, x:0, y:0, rot:0}, spec);
+      g.position.set(0,0,0);
+      g.rotation.y = -Math.PI*0.17;                       // 微微转个角度，看得出体块
+      g.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(g);
+      if(box.isEmpty()) throw new Error('空包围盒');
+      const size = new THREE.Vector3(), ctr = new THREE.Vector3();
+      box.getSize(size); box.getCenter(ctr);
+      const R = Math.max(size.length()*0.5, 0.05);
+      // 视角按体型选：吸顶灯本来就是从下往上看的；地毯/爬行垫这种扁平件
+      // 用常规 25° 仰角看基本是一条线，得压成俯视。
+      const flat = size.y < 0.22 * Math.max(size.x, size.z);
+      const dir = isLight(spec) ? new THREE.Vector3(0.45, -0.42, 1).normalize()
+                : flat          ? new THREE.Vector3(0.34, 1.00, 0.62).normalize()
+                                : new THREE.Vector3(0.58, 0.46, 1).normalize();
+      // 按包围盒八个角的投影迭代贴合。用包围球半径定距离会把细高件（书柜）
+      // 缩到只占画面 15%，displayed 到 52px 就什么都看不见了。
+      const corners = [];
+      for(let i=0;i<8;i++) corners.push(new THREE.Vector3(
+        (i&1)?box.max.x:box.min.x, (i&2)?box.max.y:box.min.y, (i&4)?box.max.z:box.min.z));
+      let dist = R / Math.tan(28*Math.PI/360) * 1.1;
+      for(let iter=0; iter<4; iter++){
+        G.cam.position.copy(ctr).addScaledVector(dir, dist);
+        G.cam.lookAt(ctr);
+        G.cam.updateMatrixWorld(true);
+        G.cam.matrixWorldInverse.copy(G.cam.matrixWorld).invert();
+        G.cam.updateProjectionMatrix();
+        let mx = 0;
+        for(const c of corners){ const p = c.clone().project(G.cam);
+          mx = Math.max(mx, Math.abs(p.x), Math.abs(p.y)); }
+        if(!(mx > 0)) break;
+        dist *= mx / 0.90;                      // 目标：最长边占画面 90%
+        if(Math.abs(mx - 0.90) < 0.02) break;
+      }
+      G.cam.position.copy(ctr).addScaledVector(dir, dist);
+      G.cam.lookAt(ctr);
+      G.cam.updateMatrixWorld(true);
+      G.cam.matrixWorldInverse.copy(G.cam.matrixWorld).invert();
+      G.cam.updateProjectionMatrix();
+      G.scene.add(g);
+      G.r.render(G.scene, G.cam);
+      // 第二遍：按真实剪影收紧并居中。包围盒的角常常是空气——开放式框架（爬爬架）
+      // 和平面旋转过的矩形（爬行垫）尤其明显，只按包围盒取景会白留三四成画面。
+      const meas = document.createElement('canvas'); meas.width = THUMB_W; meas.height = THUMB_H;
+      const mg = meas.getContext('2d'); mg.drawImage(G.cv, 0, 0);
+      const md = mg.getImageData(0, 0, THUMB_W, THUMB_H).data;
+      let bx0=1e9, bx1=-1, by0=1e9, by1=-1;
+      for(let y=0;y<THUMB_H;y++) for(let x=0;x<THUMB_W;x++){
+        if(md[(y*THUMB_W+x)*4+3] > 12){
+          if(x<bx0)bx0=x; if(x>bx1)bx1=x; if(y<by0)by0=y; if(y>by1)by1=y; } }
+      if(bx1 >= 0){
+        const sxs=(bx1-bx0+1)/THUMB_W, sys=(by1-by0+1)/THUMB_H;
+        const k=Math.max(sxs, sys);
+        const ndcx=((bx0+bx1+1)/2/THUMB_W)*2-1, ndcy=-(((by0+by1+1)/2/THUMB_H)*2-1);
+        if(k > 0.03 && (k < 0.86 || Math.abs(ndcx) > 0.04 || Math.abs(ndcy) > 0.04)){
+          const rt=new THREE.Vector3(), upv=new THREE.Vector3(), fw=new THREE.Vector3();
+          G.cam.matrixWorld.extractBasis(rt, upv, fw);
+          const halfH=Math.tan(28*Math.PI/360)*dist, halfW=halfH*G.cam.aspect;
+          const tgt=ctr.clone().addScaledVector(rt, ndcx*halfW).addScaledVector(upv, ndcy*halfH);
+          dist *= Math.min(1.6, Math.max(0.4, k/0.90));
+          G.cam.position.copy(tgt).addScaledVector(dir, dist);
+          G.cam.lookAt(tgt);
+          G.cam.updateMatrixWorld(true);
+          G.cam.matrixWorldInverse.copy(G.cam.matrixWorld).invert();
+          G.cam.updateProjectionMatrix();
+          G.r.render(G.scene, G.cam);
+        }
+      }
+      url = G.cv.toDataURL('image/png');
+    }catch(e){ url = null; }
+    if(g){ G.scene.remove(g); try{ disposeOwned(g); }catch(e){} }
+  }
+  _thumbCache.set(spec.id, url);
+  return url;
+}
+/* 渲染排队：每帧最多占用十几毫秒，滚动时不掉帧 */
+const _thumbQ = [];
+let _thumbBusy = false;
+function _thumbFallback(el, spec){ el.style.backgroundImage=''; el.style.background = spec.color || '#7d848e'; }
+function _thumbApply(el, spec, url){
+  if(url){ el.style.backgroundImage = 'url('+url+')'; el.style.backgroundColor = 'transparent'; el.classList.add('has'); }
+  else _thumbFallback(el, spec);
+}
+function queueThumb(el, spec){
+  if(spec.img){ el.style.backgroundImage = 'url('+spec.img+')'; el.style.backgroundColor='transparent';
+                el.classList.add('has'); return; }
+  if(_thumbCache.has(spec.id)){ _thumbApply(el, spec, _thumbCache.get(spec.id)); return; }
+  _thumbQ.push([el, spec]);
+  if(!_thumbBusy){ _thumbBusy = true; setTimeout(_runThumbs, 0); }
+}
+function _runThumbs(){
+  const t0 = performance.now();
+  while(_thumbQ.length && performance.now()-t0 < 16){
+    const [el, spec] = _thumbQ.shift();
+    if(!el.isConnected) continue;
+    _thumbApply(el, spec, furnThumb(spec));
+  }
+  if(_thumbQ.length) setTimeout(_runThumbs, 0);
+  else _thumbBusy = false;
+}
+let _thumbIO = null;
+function observeThumbs(container){
+  const all = [...CATALOG, ...state.customCat];
+  const nodes = container.querySelectorAll('.sw[data-thumb]');
+  if(!('IntersectionObserver' in window)){          // 没有 IO 就全排队
+    nodes.forEach(el=>{ const sp = all.find(c=>c.id===el.dataset.thumb); if(sp) queueThumb(el, sp); });
+    return;
+  }
+  if(!_thumbIO){
+    _thumbIO = new IntersectionObserver(es=>{
+      for(const e of es){
+        if(!e.isIntersecting) continue;
+        _thumbIO.unobserve(e.target);
+        const sp = [...CATALOG, ...state.customCat].find(c=>c.id===e.target.dataset.thumb);
+        if(sp) queueThumb(e.target, sp);
+      }
+    }, {root: $('#catList'), rootMargin: '220px 0px'});
+  }
+  nodes.forEach(el=>_thumbIO.observe(el));
+}
+
 function buildCatalog(filter=''){
   const listEl = $('#catList'); listEl.innerHTML='';
   const cats = {};
@@ -5367,7 +6482,7 @@ function buildCatalog(filter=''){
     const items = document.createElement('div'); items.className='items';
     for(const c of cats[cat]){
       const row = document.createElement('div'); row.className='catItem';
-      row.innerHTML = `<div class="sw" style="background:${c.color}"></div>
+      row.innerHTML = `<div class="sw" data-thumb="${c.id}" style="background:${c.color}"></div>
         <div class="nm">${c.name}<small>${c.w}×${c.d}×${c.h}cm${c.note? ' · '+c.note:''}</small></div>
         <div class="price">${c.price?'$'+c.price:''}</div>`;
       row.onclick=()=>addItem(c.id);
@@ -5375,6 +6490,12 @@ function buildCatalog(filter=''){
     }
     grp.appendChild(items); listEl.appendChild(grp);
   }
+  observeThumbs(listEl);
+  // 分类展开时里面的行才进入可视区，得再挂一次
+  listEl.querySelectorAll('.catGroup h3').forEach(h=>{
+    const prev = h.onclick;
+    h.onclick = ()=>{ prev && prev(); setTimeout(()=>observeThumbs(listEl), 0); };
+  });
 }
 function addItem(refId){
   // 放到当前视图中心附近
@@ -5469,6 +6590,8 @@ function setView(v){
   $('#camSeg').style.display = v==='3d'?'flex':'none';
   $('#dnSeg').style.display = v==='3d'?'flex':'none';
   $('#lampSeg').style.display = v==='3d'?'flex':'none';
+  $('#ptSeg').style.display = v==='3d'?'flex':'none';
+  $('#ptDnSeg').style.display = v==='3d'?'flex':'none';
   if(v==='3d'){
     show3DLoading(three?'正在更新 3D 场景…':'正在生成 3D 场景（首次需要几秒）…');
     // 用 setTimeout 而非 rAF 派发：无合成帧时 rAF 可能一直不触发，会把场景卡住不建
@@ -5822,9 +6945,22 @@ $('#btnPhoto').onclick=()=>{ $('#btnPhoto').blur();
   else photoRender(240);
 };
 $('#btnPT').onclick=()=>{ $('#btnPT').blur();
-  if(state.view!=='3d'){ setView('3d'); setTimeout(()=>ptRender(400), 900); }
-  else ptRender(400);
+  if(state.view!=='3d'){ setView('3d'); setTimeout(()=>ptRender(), 900); }
+  else ptRender();
 };
+document.querySelectorAll('#ptSeg button').forEach(b=>{ b.onclick=()=>{
+  state.ptQ=b.dataset.q;
+  document.querySelectorAll('#ptSeg button').forEach(x=>x.classList.toggle('on', x===b));
+  b.blur(); save();
+};});
+$('#ptDnOn').onclick =()=>{ state.ptDN=true;  $('#ptDnOn').classList.add('on');  $('#ptDnOff').classList.remove('on'); save(); };
+$('#ptDnOff').onclick=()=>{ state.ptDN=false; $('#ptDnOff').classList.add('on'); $('#ptDnOn').classList.remove('on');  save(); };
+function syncPTUI(){
+  const q=state.ptQ||'normal';
+  document.querySelectorAll('#ptSeg button').forEach(x=>x.classList.toggle('on', x.dataset.q===q));
+  const on=state.ptDN!==false;
+  $('#ptDnOn').classList.toggle('on', on); $('#ptDnOff').classList.toggle('on', !on);
+}
 $('#photoCancel').onclick=()=>{ if(three&&three.photo) three.photo.cancel(); };
 $('#photoModal').onclick=(e)=>{ if(e.target.id==='photoModal') e.target.style.display='none'; };
 /* 底图对照 */
@@ -5902,6 +7038,7 @@ if(location.search.indexOf('testgeo')>=0){  // 无痕测试种子（不写入存
 build2D();
 if(!load()){ state.items=[]; refresh(); } else { refresh(); }   // 默认空白户型，不预置家具
 buildCatalog();
+if(typeof syncPTUI==='function') syncPTUI();
 syncUnitUI();
 if(location.hash==='#3d') setView('3d');
 if(location.hash==='#a'){ loadPreset('A'); }
@@ -5929,6 +7066,8 @@ async function runPT(){
     state.items.push({uid:uidSeq++, ref:arm.id, x:22, y:26, rot:0});
     const cl=CATALOG.find(c=>c.id==='cl-flush');
     state.items.push({uid:uidSeq++, ref:cl.id, x:22, y:24, rot:0});
+    const bk=CATALOG.find(c=>c.id==='billy');
+    state.items.push({uid:uidSeq++, ref:bk.id, x:18, y:22, rot:0});
     refresh(); setView('3d'); await wait(3200);
     setCamMode('fp'); await wait(600);
     three.cam.position.set(22, EYE_H, 31); fpYaw=Math.PI; fpPitch=-0.05;
@@ -5936,73 +7075,100 @@ async function runPT(){
     await wait(300);
 
     /* ---- 1. 场景收集 ---- */
-    const t0=performance.now();
     const S=ptCollect();
-    const tCollect=performance.now()-t0;
-    T('pt-collect-tris', !!S && S.nTri>10000, S? (S.nTri.toLocaleString()+' 三角形 · '+S.mats.length+' 材质 · '+S.maps.length+' 贴图 · '+Math.round(tCollect)+'ms') : 'null');
+    T('pt-collect-tris', !!S && S.nTri>10000, S? (S.nTri.toLocaleString()+' 三角形 · '+S.mats.length+' 材质 · '+S.maps.length+' 贴图') : 'null');
     let finite=true;
     for(let i=0;i<S.P.length;i+=997){ if(!isFinite(S.P[i])) { finite=false; break; } }
     T('pt-collect-finite', finite);
 
-    /* ---- 2. BVH 正确性（CPU 校验）---- */
-    const t1=performance.now();
+    /* ---- 2. BVH 正确性（CPU 独立校验）---- */
     const B=ptBuildBVH(S.nTri, S.cen, S.bmn, S.bmx);
-    const tBvh=performance.now()-t1;
-    T('pt-bvh-built', B.nodeCnt>1 && B.nodeCnt<S.nTri*2, B.nodeCnt.toLocaleString()+' 节点 · '+Math.round(tBvh)+'ms');
-    // idx 必须是一个排列
+    T('pt-bvh-built', B.nodeCnt>1 && B.nodeCnt<S.nTri*2, B.nodeCnt.toLocaleString()+' 节点');
     const seen=new Uint8Array(S.nTri); let dup=0;
     for(let i=0;i<S.nTri;i++){ if(seen[B.idx[i]]) dup++; seen[B.idx[i]]=1; }
     T('pt-bvh-idx-permutation', dup===0, 'dup='+dup);
-    // 遍历树：叶子计数之和 = 三角形数；每个三角形都在所属叶子的包围盒里；孩子盒在父盒内
     const N=B.nodes; let leafSum=0, badTri=0, badChild=0, maxDepth=0, leaves=0, maxLeaf=0;
     const EPS=1e-3;
-    const inside=(o, x0,y0,z0,x1,y1,z1)=>
+    const inside=(o,x0,y0,z0,x1,y1,z1)=>
       x0>=N[o]-EPS && y0>=N[o+1]-EPS && z0>=N[o+2]-EPS &&
       x1<=N[o+4]+EPS && y1<=N[o+5]+EPS && z1<=N[o+6]+EPS;
     const st=[[0,0]];
     while(st.length){
       const [ni,d]=st.pop(); const o=ni*8; maxDepth=Math.max(maxDepth,d);
       const cnt=N[o+7], first=N[o+3];
-      if(cnt>0){
-        leaves++; leafSum+=cnt; maxLeaf=Math.max(maxLeaf,cnt);
-        for(let i=first;i<first+cnt;i++){
-          const t=B.idx[i]*3;
-          if(!inside(o, S.bmn[t],S.bmn[t+1],S.bmn[t+2], S.bmx[t],S.bmx[t+1],S.bmx[t+2])) badTri++;
-        }
-      } else {
-        const l=first, r=first+1;
-        for(const c of [l,r]){
-          const co=c*8;
-          if(!inside(o, N[co],N[co+1],N[co+2], N[co+4],N[co+5],N[co+6])) badChild++;
-        }
-        st.push([l,d+1],[r,d+1]);
-      }
+      if(cnt>0){ leaves++; leafSum+=cnt; maxLeaf=Math.max(maxLeaf,cnt);
+        for(let i=first;i<first+cnt;i++){ const t=B.idx[i]*3;
+          if(!inside(o,S.bmn[t],S.bmn[t+1],S.bmn[t+2],S.bmx[t],S.bmx[t+1],S.bmx[t+2])) badTri++; }
+      } else { const l=first, r=first+1;
+        for(const c of [l,r]){ const co=c*8;
+          if(!inside(o,N[co],N[co+1],N[co+2],N[co+4],N[co+5],N[co+6])) badChild++; }
+        st.push([l,d+1],[r,d+1]); }
     }
     T('pt-bvh-covers-all', leafSum===S.nTri, leafSum+'/'+S.nTri);
     T('pt-bvh-tri-in-leaf-box', badTri===0, 'bad='+badTri);
     T('pt-bvh-child-in-parent', badChild===0, 'bad='+badChild);
-    T('pt-bvh-depth-fits-stack', maxDepth<48, 'depth='+maxDepth+' 叶子='+leaves+' 最大叶='+maxLeaf);
+    T('pt-bvh-depth-fits-stack', maxDepth<48, 'depth='+maxDepth+' 叶='+leaves+' 最大叶='+maxLeaf);
 
-    /* ---- 3. GPU：着色器编译 + 出图 ---- */
-    const errs0=window.__EPT.length;
-    const img=await new Promise(res=>{
-      ptRender(4, {maxPx: 90*70, bounces: 3, onDone: (cv,spp)=>res({cv,spp})});
-      setTimeout(()=>res(null), 90000);
+    /* ---- 3. 渲染 + 进度 + 降噪 ---- */
+    const noiseOf=(cv)=>{                       // 平均 |拉普拉斯|：高频能量 = 噪点强度
+      const g=cv.getContext('2d'), w=cv.width, h=cv.height;
+      const d=g.getImageData(0,0,w,h).data;
+      const L=(x,y)=>{ const i=(y*w+x)*4; return d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114; };
+      let s=0,n=0;
+      for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+        s+=Math.abs(4*L(x,y)-L(x-1,y)-L(x+1,y)-L(x,y-1)-L(x,y+1)); n++; }
+      return s/n;
+    };
+    const runOnce=(dn)=>new Promise(res=>{
+      const seenTxt=[];
+      // 用 MutationObserver 而不是 setInterval：headless 虚拟时间下 0ms 定时器链会饿死长间隔定时器
+      const el=document.querySelector('#photoTxt');
+      const mo=new MutationObserver(()=>{ const t=el.textContent;
+        if(t && seenTxt[seenTxt.length-1]!==t) seenTxt.push(t); });
+      mo.observe(el, {childList:true, characterData:true, subtree:true});
+      ptRender(8, {maxPx: 96*74, bounces: 3, denoise: dn,
+        onDone:(cv,spp)=>{ mo.disconnect(); res({cv, spp, seenTxt}); }});
+      setTimeout(()=>{ mo.disconnect(); res(null); }, 120000);
     });
-    T('pt-render-finished', !!img && img.spp>=4, img? (img.spp+' spp · '+img.cv.width+'x'+img.cv.height) : '超时/未完成');
+
+    const errs0=window.__EPT.length;
+    const off=await runOnce(false);
+    T('pt-render-finished', !!off && off.spp>=8, off? (off.spp+' spp · '+off.cv.width+'x'+off.cv.height) : '超时');
     const shaderErr=window.__EPT.slice(errs0).filter(m=>/shader|GLSL|program|compil/i.test(m));
     T('pt-shader-compiles', shaderErr.length===0, shaderErr.join(' ;; ').slice(0,400));
-    if(img && img.cv){
-      const g=img.cv.getContext('2d');
-      const d=g.getImageData(0,0,img.cv.width,img.cv.height).data;
-      let sum=0, nz=0, mx=0;
-      for(let i=0;i<d.length;i+=4){ const l=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114);
+
+    if(off){
+      // 进度必须真的在走，而且不能一直是 0
+      const pcts=off.seenTxt.map(t=>{ const m=t.match(/([\d.]+)%/); return m? parseFloat(m[1]) : null; })
+                            .filter(v=>v!==null);
+      T('pt-progress-updates', off.seenTxt.length>=3, off.seenTxt.length+' 次文案变化');
+      T('pt-progress-nonzero', pcts.some(v=>v>0), '出现过的百分比: '+pcts.slice(0,6).join(',')+
+        (pcts.length? ' 最大='+Math.max.apply(null,pcts)+'%' : ' 无'));
+      T('pt-progress-monotonic', pcts.length<2 || pcts.every((v,i)=>i===0||v>=pcts[i-1]-0.01), pcts.slice(-4).join(' → '));
+      const g=off.cv.getContext('2d');
+      const d=g.getImageData(0,0,off.cv.width,off.cv.height).data;
+      let sum=0,nz=0,mx=0;
+      for(let i=0;i<d.length;i+=4){ const l=d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114;
         sum+=l; if(l>4) nz++; mx=Math.max(mx,l); }
-      const n=d.length/4, mean=sum/n, frac=nz/n;
-      T('pt-image-not-black', mean>6 && frac>0.35, '均值='+mean.toFixed(1)+' 亮像素占比='+(frac*100).toFixed(0)+'% 峰值='+mx);
-      T('pt-image-has-range', mx>60, '峰值='+mx);
+      const n=d.length/4;
+      T('pt-image-not-black', sum/n>6 && nz/n>0.35, '均值='+(sum/n).toFixed(1)+' 亮像素='+((nz/n)*100).toFixed(0)+'%');
+      T('pt-image-has-range', mx>60, '峰值='+mx.toFixed(0));
     }
-    T('pt-cleanup', PT===null, 'PT='+(PT===null?'已释放':'仍占用'));
+
+    const on=await runOnce(true);
+    T('pt-denoise-finished', !!on && on.spp>=8, on? (on.spp+' spp') : '超时');
+    if(off && on){
+      const nOff=noiseOf(off.cv), nOn=noiseOf(on.cv);
+      T('pt-denoise-reduces-noise', nOn < nOff*0.72,
+        '关='+nOff.toFixed(2)+' 开='+nOn.toFixed(2)+'（降 '+(100*(1-nOn/nOff)).toFixed(0)+'%）');
+      const g2=on.cv.getContext('2d');
+      const d2=g2.getImageData(0,0,on.cv.width,on.cv.height).data;
+      let s2=0; for(let i=0;i<d2.length;i+=4) s2+=d2[i]*0.299+d2[i+1]*0.587+d2[i+2]*0.114;
+      T('pt-denoise-keeps-brightness', s2/(d2.length/4) > 6, '降噪后均值='+(s2/(d2.length/4)).toFixed(1));
+    }
+    T('pt-cleanup', PT===null, PT===null?'已释放':'仍占用');
+    T('pt-quality-presets', !!(PT_QUALITY.draft&&PT_QUALITY.normal&&PT_QUALITY.fine),
+      Object.keys(PT_QUALITY).map(k=>PT_QUALITY[k].label+':'+PT_QUALITY[k].spp+'spp').join(' '));
   }catch(e){ log.push('EXC '+e.message+' | '+(e.stack||'').split('\n')[1]); }
   log.push('ERRS: '+JSON.stringify(window.__EPT.slice(0,6)));
   const pre=document.createElement('pre'); pre.id='tpt'; pre.textContent=log.join('\n');
