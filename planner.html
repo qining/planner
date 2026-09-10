@@ -5941,7 +5941,11 @@ function modelCtx(g, spec, col, col2, matlib, it){
     bar(len,r,mat,x,y,z,axis){ C.tube(len,r,mat,x,y,z,axis||'x');
       const ax=(axis||'x')==='x'?[1,0,0]:[0,0,1];
       for(const s2 of [-1,1]) C.tube(r*3.4,r*0.75,mat, (x||0)+ax[0]*s2*(len/2-r*1.4), (y||0)-r*1.7, (z||0)+ax[2]*s2*(len/2-r*1.4),'y'); },
-    caster(r,mat,x,z){ const w=new THREE.Mesh(new THREE.TorusGeometry(r,r*0.42,8,16),mat);
+    /* 脚轮：r = 轮子外半径（外沿正好切地）。
+       原版拿 TorusGeometry(r, r*0.42) 放在 y=r，外半径其实是 1.42r，
+       整个轮子会沉到地板下 0.42r——「所有部件贴地」那条断言必挂。 */
+    caster(r,mat,x,z){ const t=r*0.30;
+      const w=new THREE.Mesh(new THREE.TorusGeometry(Math.max(r-t,r*0.2),t,8,16),mat);
       w.rotation.y=Math.PI/2; w.position.set(x,r,z); w.castShadow=true; g.add(w);
       C.cyl(r*0.3,r*0.3,r*1.2,mat,x,r*0.9,z,10); },
     /* 网格阵列辅助 */
