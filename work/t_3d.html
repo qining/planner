@@ -200,7 +200,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.5</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.6</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -665,13 +665,13 @@ const CATALOG = [
  {id:'vihals', cat:'餐桌椅 / 吧凳', name:'VIHALS 伸缩桌 120→180', w:120,d:74,h:75, price:149.99, priceCA:179, color:'#e8e4dc', kind:'tableRect', url:'https://www.ikea.com/us/en/p/vihals-extendable-table-white-20589777/', note:'EKEDALEN继任款'},
  {id:'lisabo140', cat:'餐桌椅 / 吧凳', name:'LISABO 餐桌 140×78', w:140,d:78,h:74, price:299.99, priceCA:229, color:'#c9a877', kind:'tableRect', url:'https://www.ikea.com/us/en/p/lisabo-table-ash-veneer-70294339/'},
  {id:'pinntorp', cat:'餐桌椅 / 吧凳', name:'PINNTORP 餐桌 125×75', w:125,d:75,h:75, price:199.99, priceCA:149, color:'#c9b287', kind:'tableRect', url:'https://www.ikea.com/us/en/p/pinntorp-table-light-brown-stained-white-stained-pine-30529467/'},
- {id:'teodores', cat:'餐桌椅 / 吧凳', name:'TEODORES 餐椅', w:46,d:54,h:80, price:55, priceCA:45, color:'#e8e4dc', kind:'chair', url:'https://www.ikea.com/us/en/p/teodores-chair-white-30486156/'},
- {id:'odger', cat:'餐桌椅 / 吧凳', name:'ODGER 餐椅', w:45,d:51,h:81, price:125, priceCA:120, color:'#5c5f66', kind:'chair', url:'https://www.ikea.com/us/en/p/odger-chair-anthracite-50457313/'},
- {id:'tobias', cat:'餐桌椅 / 吧凳', name:'TOBIAS 餐椅(透明)', w:55,d:56,h:82, price:115, priceCA:100, color:'#aeb6bf', kind:'chair', url:'https://www.ikea.com/us/en/p/tobias-chair-clear-chrome-plated-80349671/'},
- {id:'lisabo_ch', cat:'餐桌椅 / 吧凳', name:'LISABO 餐椅', w:46,d:51,h:80, price:80, priceCA:80, color:'#c9a877', kind:'chair', url:'https://www.ikea.com/us/en/p/lisabo-chair-ash-00457235/'},
- {id:'bergmund_bar', cat:'餐桌椅 / 吧凳', name:'BERGMUND 吧凳(座高62)', w:45,d:48,h:97, seat:62, price:155, priceCA:140, color:'#3e4249', kind:'stool', url:'https://www.ikea.com/us/en/p/bergmund-bar-stool-with-backrest-white-gunnared-medium-gray-s39471787/', note:'配36"中岛'},
- {id:'skogsta_st', cat:'餐桌椅 / 吧凳', name:'SKOGSTA 吧凳(座高62)', w:41,d:46,h:91, seat:62, price:95, priceCA:95, caVar:'加拿大为黑色款（美国为相思木色）', color:'#9a7c52', kind:'stool', url:'https://www.ikea.com/us/en/p/skogsta-bar-stool-with-backrest-counter-height-acacia-50620677/', note:'实木'},
- {id:'franklin', cat:'餐桌椅 / 吧凳', name:'FRANKLIN 折叠吧凳(63)', w:50,d:44,h:95, seat:63, price:45, priceCA:50, color:'#e8e4dc', kind:'stool', url:'https://www.ikea.com/us/en/p/franklin-bar-stool-with-backrest-foldable-counter-height-white-white-70404875/'},
+ {id:'teodores', cat:'餐桌椅 / 吧凳', name:'TEODORES 餐椅', w:46,d:54,h:80, seatH:45, price:55, priceCA:45, color:'#e8e4dc', kind:'chair', model:'teodores', url:'https://www.ikea.com/us/en/p/teodores-chair-white-30486156/', note:'一体注塑座面+独立靠背板，实木染白腿；座宽40 座深37'},
+ {id:'odger', cat:'餐桌椅 / 吧凳', name:'ODGER 餐椅', w:45,d:51,h:81, seatH:43, price:125, priceCA:120, color:'#5c5f66', kind:'chair', model:'odger', url:'https://www.ikea.com/us/en/p/odger-chair-anthracite-50457313/', note:'再生木纤维+塑料一体壳，四条锥形腿；座宽45 座深41'},
+ {id:'tobias', cat:'餐桌椅 / 吧凳', name:'TOBIAS 餐椅(透明)', w:55,d:56,h:82, seatH:44, price:115, priceCA:100, color:'#aeb6bf', kind:'chair', model:'tobias', url:'https://www.ikea.com/us/en/p/tobias-chair-clear-chrome-plated-80349671/', note:'透明亚克力一体壳+镀铬钢管悬臂架；座48×46 靠背顶宽42 高35；宽55为底架跨距'},
+ {id:'lisabo_ch', cat:'餐桌椅 / 吧凳', name:'LISABO 餐椅', w:46,d:51,h:80, seatH:45, price:80, priceCA:80, color:'#c9a877', kind:'chair', model:'lisabo_ch', wood:'birch', url:'https://www.ikea.com/us/en/p/lisabo-chair-ash-00457235/', note:'全实木白蜡，前腿细圆锥/后腿扁方立柱通顶，弯曲木靠背；座宽44 座深39'},
+ {id:'bergmund_bar', cat:'餐桌椅 / 吧凳', name:'BERGMUND 吧凳(座高62)', w:45,d:48,h:97, seat:62, seatH:62, price:155, priceCA:140, color:'#33363c', color2:'#8d8f90', model:'bergmund-bar', kind:'stool', wood:'beech', url:'https://www.ikea.com/us/en/p/bergmund-bar-stool-with-backrest-counter-height-black-gunnared-medium-grey-s59471786/', note:'配36"中岛；黑染实木框 + Gunnared 中灰布罩（可拆洗），座宽45/座深37，前横撑带不锈钢踏脚片'},
+ {id:'skogsta_st', cat:'餐桌椅 / 吧凳', name:'SKOGSTA 吧凳(座高62)', w:41,d:46,h:91, seat:62, seatH:62, price:95, priceCA:95, caVar:'加拿大为黑色款（美国为相思木色）', color:'#9a7c52', model:'skogsta-stool', kind:'stool', wood:'birch', url:'https://www.ikea.com/us/en/p/skogsta-bar-stool-with-backrest-counter-height-acacia-50620677/', note:'全实木相思木，温莎式半圆背弓+3根背档，座宽41/座深37'},
+ {id:'franklin', cat:'餐桌椅 / 吧凳', name:'FRANKLIN 折叠吧凳(63)', w:50,d:44,h:95, seat:63, seatH:63, price:45, priceCA:50, color:'#e8e4dc', model:'franklin-fold', kind:'stool', url:'https://www.ikea.com/us/en/p/franklin-bar-stool-with-backrest-foldable-counter-height-white-white-70404875/', note:'可折叠，钢管交叉框+覆膜胶合板座背，踏脚杆带灰色护套，座面34×34'},
  // —— 床 / 床头柜 ——
  {id:'malm_q', cat:'床 / 床头柜', name:'MALM 床架 Queen', w:168,d:211,h:100, price:249, priceCA:249, color:'#f0ece4', kind:'bed', url:'https://www.ikea.com/us/en/p/malm-bed-frame-white-s19931605/', note:'外框168×211，排骨架另购'},
  {id:'malm_k', cat:'床 / 床头柜', name:'MALM 床架 King', w:209,d:211,h:100, price:339, priceCA:399, caVar:'加拿大为高床架 King', color:'#f0ece4', kind:'bed', url:'https://www.ikea.com/us/en/p/malm-bed-frame-white-s49931604/'},
@@ -701,8 +701,8 @@ const CATALOG = [
  {id:'micke', cat:'书桌 / 办公椅', name:'MICKE 书桌 105', w:105,d:50,h:75, price:99.99, priceCA:149, color:'#e8e4dc', kind:'desk', url:'https://www.ikea.com/us/en/p/micke-desk-black-brown-10244743/'},
  {id:'bekant160', cat:'书桌 / 办公椅', name:'BEKANT 书桌 160×80', w:160,d:80,h:73, price:329, priceCA:199, color:'#d8d3c8', kind:'desk', url:'https://www.ikea.com/us/en/p/bekant-desk-white-s19022808/'},
  {id:'trotten', cat:'书桌 / 办公椅', name:'TROTTEN 升降桌 120×70', w:120,d:70,h:73, price:249.99, caNA:true, color:'#d8d3c8', kind:'desk', url:'https://www.ikea.com/us/en/p/trotten-desk-sit-stand-beige-white-s89434127/', note:'手摇升降72-122'},
- {id:'markus', cat:'书桌 / 办公椅', name:'MARKUS 办公椅', w:62,d:62,h:140, price:299.99, priceCA:229, color:'#3e4249', kind:'officeChair', url:'https://www.ikea.com/us/en/p/markus-office-chair-vissle-dark-gray-90289172/'},
- {id:'flintan', cat:'书桌 / 办公椅', name:'FLINTAN 办公椅', w:71,d:71,h:114, price:119.99, priceCA:99, caVar:'加拿大只售无扶手款', color:'#3e4249', kind:'officeChair', url:'https://www.ikea.com/us/en/p/flintan-office-chair-with-armrests-black-s29424471/'},
+ {id:'markus', cat:'书桌 / 办公椅', name:'MARKUS 办公椅', w:62,d:60,h:140, price:299.99, priceCA:229, color:'#3e4249', seatH:51.5, model:'markus', kind:'officeChair', url:'https://www.ikea.com/us/en/p/markus-office-chair-vissle-dark-gray-90289172/', note:'Vissle 深灰。IKEA 官方尺寸：宽 62 / 深 60 / 总高 129–140（h 记最高档）；座高可调 46–57（seatH 取中值 51.5）；扶手高 68–79；座面 53×47；高背含头枕总长 94，头枕 42×18。网布中上段 + 织物下段 + 固定环形扶手'},
+ {id:'flintan', cat:'书桌 / 办公椅', name:'FLINTAN 办公椅', w:71,d:71,h:114, price:119.99, priceCA:99, caVar:'加拿大只售无扶手款', color:'#3e4249', seatH:51.5, model:'flintan', kind:'officeChair', url:'https://www.ikea.com/us/en/p/flintan-office-chair-with-armrests-black-s29424471/', note:'IKEA 官方尺寸：宽 71 / 深 71 / 总高 103–114（h 记最高档）；座高可调 45–58（seatH 取中值 51.5）；扶手高 69–82；座面 46×49；靠背 66 高、最宽 61。盾形网布靠背带三道腰托横带，T 形扶手'},
  {id:'alex_dr', cat:'书桌 / 办公椅', name:'ALEX 抽屉柜', w:36,d:58,h:70, price:79.99, priceCA:129, color:'#e8e4dc', kind:'dresser', url:'https://www.ikea.com/us/en/p/alex-drawer-unit-white-00473546/'},
  // —— 地毯 / 茶几 / 灯 ——
  {id:'stoense23', cat:'地毯 / 爬行垫', name:'STOENSE 地毯 200×300', w:300,d:200,h:2, price:159.99, priceCA:199, color:'#b9b3a6', kind:'rug', url:'https://www.ikea.com/us/en/p/stoense-rug-low-pile-medium-gray-30426836/'},
@@ -4093,7 +4093,7 @@ function ptRender(samples, ptOpts){
 /* ===== 补齐的基础贴图：板材 / 地毯绒面 / 金属烤漆 / 塑料橘皮 =====
    这四类此前完全没有贴图，泛型建模的柜体、地毯、铁架、塑料件都是纯色平板，
    近看一眼假。贴图一律以近白为基调，靠 material.color 上色。 */
-let _lamTex=null, _carpetTex=null, _powderTex=null, _plasticTex=null, _leatherTex=null;
+let _lamTex=null, _carpetTex=null, _powderTex=null, _plasticTex=null, _leatherTex=null, _speckTex=null, _meshTex=null;
 
 /* 三聚氰胺/烤漆板：极细颗粒 + 轻微顺向纹 + 偶发微瑕 */
 function laminateTexture(){
@@ -4200,6 +4200,120 @@ function leatherTexture(){
   t.repeat.set(3,3); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
   _leatherTex=t; return t;
 }
+
+function meshWeaveTexture(){
+  if(_meshTex) return _meshTex;
+  srand(1016);
+  const N=512, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#fafafb'; g.fillRect(0,0,N,N);
+  const P=16, K=N/P;                              // 网孔间距
+  for(let iy=0;iy<K;iy++) for(let ix=0;ix<K;ix++){ // 菱形透空
+    const cx=ix*P+P*0.5, cy=iy*P+P*0.5, r=P*(0.30+rnd01()*0.05);
+    g.fillStyle=`rgba(0,0,0,${0.44+rnd01()*0.18})`;
+    g.beginPath(); g.moveTo(cx-r,cy); g.lineTo(cx,cy-r); g.lineTo(cx+r,cy); g.lineTo(cx,cy+r);
+    g.closePath(); g.fill();
+  }
+  for(let i=0;i<K;i++){                           // 经线 / 纬线：亮一档
+    g.fillStyle=`rgba(255,255,255,${0.26+rnd01()*0.20})`; g.fillRect(i*P, 0, P*0.20, N);
+    g.fillStyle=`rgba(255,255,255,${0.20+rnd01()*0.18})`; g.fillRect(0, i*P, N, P*0.20);
+  }
+  for(let i=0;i<9000;i++){                        // 极细颗粒：打断规则感
+    const v=rnd01()<0.5?0:255;
+    g.fillStyle=`rgba(${v},${v},${v},${0.02+rnd01()*0.05})`;
+    g.fillRect(rnd01()*N, rnd01()*N, 1, 1);
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(2,2); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _meshTex=t; return t;
+}
+
+
+function chairTab(K){ return (t)=>{
+  if(t<=K[0][0]) return K[0][1];
+  for(let i=1;i<K.length;i++) if(t<=K[i][0]){ const a=K[i-1], b=K[i];
+    return a[1]+(b[1]-a[1])*(t-a[0])/(b[0]-a[0]); }
+  return K[K.length-1][1]; }; }
+
+function chairOutl(cm, wf, H, t0, t1, n){
+  const P=[];
+  for(let i=0;i<=n;i++){ const t=t0+(t1-t0)*i/n; P.push([ cm(wf(t)), cm(t*H)]); }
+  for(let i=n;i>=0;i--){ const t=t0+(t1-t0)*i/n; P.push([-cm(wf(t)), cm(t*H)]); }
+  return P; }
+
+function chairSpl(K){
+  const n=K.length, at=(i)=>K[Math.max(0,Math.min(n-1,i))];
+  return (t)=>{
+    const u=Math.max(0,Math.min(0.999999,t))*(n-1), i=Math.floor(u), f=u-i;
+    const p0=at(i-1), p1=at(i), p2=at(i+1), p3=at(i+2);
+    const c=(a,b,c2,d)=>0.5*(2*b+(-a+c2)*f+(2*a-5*b+4*c2-d)*f*f+(-a+3*b-3*c2+d)*f*f*f);
+    return [c(p0[0],p1[0],p2[0],p3[0]), c(p0[1],p1[1],p2[1],p3[1])]; }; }
+
+function chairBend(m, sp, H, bow, dz){
+  const pa=m.geometry.attributes.position;
+  for(let i=0;i<pa.count;i++){
+    const x=pa.getX(i), u=pa.getY(i), v=pa.getZ(i);
+    const t=Math.max(0,Math.min(1,u/H));
+    const p=sp(t), a=sp(Math.max(0,t-0.004)), b=sp(Math.min(1,t+0.004));
+    let ty=b[0]-a[0], tz=b[1]-a[1];
+    const L=Math.hypot(ty,tz)||1; ty/=L; tz/=L;
+    const o=v+dz-bow*x*x;                       // 厚度偏移 + 横向包裹弧度（边缘往后收）
+    pa.setXYZ(i, x, p[0]-tz*o, p[1]+ty*o);      // 法线 = 切线左转 90°，指向椅子正前方
+  }
+  pa.needsUpdate=true;
+  m.geometry.computeVertexNormals();
+  m.geometry.computeBoundingBox(); m.geometry.computeBoundingSphere();
+  return m; }
+
+function chairMid(depth, bevel){ return -(depth/2-(bevel||0)); }
+
+function chairRing(o, i2){
+  const P=[];
+  for(let k=0;k<o.length;k++) P.push(o[k]);
+  P.push(o[0]); P.push(i2[0]);
+  for(let k=i2.length-1;k>=1;k--) P.push(i2[k]);
+  P.push(i2[0]);
+  return P; }
+
+/* 脚轮：黑胎 + 亮色轮毂 + 塑料轮壳，psi 为所在爪的方位角（只绕竖轴转，不叠复合角） */
+function chairCaster(C, psi, RC, RW, mShell, mTire, mHub){
+  const cm=C.cm, s=Math.sin(psi), c=Math.cos(psi);
+  const x=cm(RC)*s, z=cm(RC)*c, TT=RW*0.34, RT=RW-TT;
+  const hs=C.rb(cm(5.2), cm(4.4), cm(6.4), cm(1.1), mShell, x, cm(RW*1.05), z); hs.rotation.y=psi;
+  const nk=C.cyl(cm(1.5), cm(1.9), cm(2.6), mShell, x, cm(RW*1.05+4.2), z, 12); nk.rotation.y=psi;
+  const tire=C.torus(cm(RT), cm(TT), mTire, x, cm(RW), z); tire.rotation.y=Math.PI/2+psi;
+  const hub=C.sph(cm(RW*0.62), mHub, x, cm(RW), z, 12);
+  hub.rotation.y=psi; hub.scale.x=0.42;
+  return [hs,tire,hub,nk]; }
+
+
+function speckleTexture(){
+  if(_speckTex) return _speckTex;
+  srand(1017);
+  const N=512, c=document.createElement('canvas'); c.width=c.height=N;
+  const g=c.getContext('2d');
+  g.fillStyle='#fbfaf8'; g.fillRect(0,0,N,N);
+  for(let i=0;i<9000;i++){                       // 注塑橘皮底纹
+    const v=rnd01()<0.5?150:255;
+    g.fillStyle=`rgba(${v},${v},${v},${0.012+rnd01()*0.026})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 0.7+rnd01()*2.4, 0, 6.283); g.fill();
+  }
+  for(let i=0;i<2200;i++){                       // 木纤维颗粒：浅色小短棒，随机朝向
+    const x=rnd01()*N, y=rnd01()*N, a=rnd01()*6.283;
+    const l=1.2+rnd01()*4.6, w=0.5+rnd01()*1.1;
+    g.save(); g.translate(x,y); g.rotate(a);
+    g.fillStyle=`rgba(255,252,242,${(0.16+rnd01()*0.42).toFixed(3)})`;
+    g.fillRect(-l/2,-w/2,l,w); g.restore();
+  }
+  for(let i=0;i<700;i++){                        // 深色杂质
+    g.fillStyle=`rgba(60,52,44,${(0.06+rnd01()*0.16).toFixed(3)})`;
+    g.beginPath(); g.arc(rnd01()*N, rnd01()*N, 0.5+rnd01()*1.4, 0, 6.283); g.fill();
+  }
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping;
+  t.repeat.set(3,3); t.encoding=THREE.sRGBEncoding; t.anisotropy=8;
+  _speckTex=t; return t;
+}
+
 
 /* 贴图密度要随家具尺寸变，否则 40cm 床头柜和 200cm 沙发纹理一样大。
    把缩放吸附到几档并缓存——每 clone 一次都会多一次 GPU 上传，不能按件克隆。 */
@@ -5791,6 +5905,875 @@ MODELS['wk-mat'] = (C) => {
   C.box(C.cm(1.2), t*0.96, C.d, edge, 0, 0, 0);
   for(const sz of [-1,1]) C.box(C.w, C.cm(0.5), C.cm(0.8), edge, 0, C.cm(0.3), sz*(hd-C.cm(0.4)));
 };
+MODELS['bergmund-bar'] = (C) => {
+  const cm = C.cm, T = C.THREE;
+  /* BERGMUND 吧凳（座高62cm）：染色实木四腿四面微外撇，
+     Gunnared 平织布罩把座面与靠背整体包起来（下缘一圈缝边），
+     两侧与后方各一道高横撑、前方一道低横撑作踏脚并压一条不锈钢踏脚片。 */
+  const fabC = C.col2 ? C.col2.clone() : C.col.clone().lerp(new T.Color(0xffffff), .55);
+  const wood  = C.M(C.col, {wood:'beech', rough:.54, clear:.20, clearRough:.28, envI:.24});
+  const fab   = C.M(fabC,  {fabric:true, rough:.94, envI:.17, sheen:.16});
+  const fabD  = C.M(fabC.clone().multiplyScalar(.82), {fabric:true, rough:.96, envI:.14});
+  const steel = C.M(0xd2d5d8, {metal:.55, rough:.38, envI:.30});   // 拉丝不锈钢踏脚片（金属度压低，否则整条映成天空蓝）
+
+  /* [x, y, 圆角半径]（cm）→ 圆角多边形（ft） */
+  const rp = (pts) => { const o = [], n = pts.length;
+    for(let i=0;i<n;i++){ const p=pts[i], a=pts[(i+n-1)%n], b=pts[(i+1)%n];
+      const l1=Math.hypot(a[0]-p[0],a[1]-p[1])||1e-4, l2=Math.hypot(b[0]-p[0],b[1]-p[1])||1e-4;
+      const u1=[(a[0]-p[0])/l1,(a[1]-p[1])/l1], u2=[(b[0]-p[0])/l2,(b[1]-p[1])/l2];
+      const ang=Math.acos(Math.max(-1,Math.min(1,u1[0]*u2[0]+u1[1]*u2[1])));
+      const t=Math.min(p[2]/Math.max(.05,Math.tan(ang/2)), l1*.5, l2*.5);
+      const A=[p[0]+u1[0]*t,p[1]+u1[1]*t], B=[p[0]+u2[0]*t,p[1]+u2[1]*t];
+      for(let k=0;k<=7;k++){ const s=k/7, m=1-s;
+        o.push([cm(m*m*A[0]+2*m*s*p[0]+s*s*B[0]), cm(m*m*A[1]+2*m*s*p[1]+s*s*B[1])]); } }
+    return o; };
+
+  /* ---------- 四条方料腿：上端 4.3cm 见方，落地收到 3.5cm，前后左右都微外撇 ---------- */
+  const LT = 51.6;                                  // 腿顶（座箱下沿）
+  const legPos = [[1,1],[-1,1],[1,-1],[-1,-1]];     // [sx, sz]，sz=+1 为正面
+  for(const [sx,sz] of legPos){
+    const bx = sx*19.4, bz = sz*(sz>0 ? 21.7 : 21.2);
+    const tx = sx*16.4, tz = sz*(sz>0 ? 14.6 : 13.4);
+    const dx = cm(tx-bx), dy = cm(LT), dz = cm(tz-bz), L = Math.hypot(dx,dy,dz);
+    const lift = cm(2.475) * Math.hypot(dx,dz) / L;       // 斜柱底面最低角抬到 y=0
+    const m = C.cyl(cm(3.041), cm(2.475), L, wood, cm(bx+tx)/2, lift + dy/2 - L/2, cm(bz+tz)/2, 4);
+    m.geometry.rotateY(Math.PI/4);                  // 4 边柱转成正方向（面朝 x/z）
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), new T.Vector3(dx/L,dy/L,dz/L));
+  }
+
+  /* ---------- 横撑：两侧 + 后方在 27cm，前方压到 17.5cm 当踏脚 ---------- */
+  const legX = (y)=> 19.4 + (16.4-19.4)*(y/LT);
+  const legZF = (y)=> 21.7 + (14.6-21.7)*(y/LT);
+  const legZB = (y)=> -21.2 + (-13.4+21.2)*(y/LT);
+  const yS = 27.0, yF = 17.5;
+  for(const sx of [-1,1])
+    C.rb(cm(2.3), cm(3.9), cm(legZF(yS)-legZB(yS)), cm(.45), wood,
+         sx*cm(legX(yS)), cm(yS-1.95), cm(legZF(yS)+legZB(yS))/2, 2);
+  C.rb(cm(2*legX(yS)-3.4), cm(3.9), cm(2.3), cm(.45), wood, 0, cm(yS-1.95), cm(legZB(yS)), 2);
+  C.rb(cm(2*legX(yF)-3.4), cm(3.9), cm(2.3), cm(.45), wood, 0, cm(yF-1.95), cm(legZF(yF)), 2);
+  /* 不锈钢踏脚片压在前横撑顶面 */
+  C.rb(cm(29.0), cm(.4), cm(3.0), cm(.15), steel, 0, cm(yF+1.85), cm(legZF(yF)), 2);
+
+  /* ---------- 软包座面：梯形（前宽后窄）圆角块 + 顶部微鼓 + 下缘一圈布罩缝边 ---------- */
+  const seatPoly = (bv, ex) => rp([
+    [-(22.15+ex-bv),  19.15+ex-bv, Math.max(.5, 5.2-bv)],
+    [-(21.15+ex-bv), -(18.75+ex-bv), Math.max(.4, 3.6-bv)],
+    [ (21.15+ex-bv), -(18.75+ex-bv), Math.max(.4, 3.6-bv)],
+    [ (22.15+ex-bv),  19.15+ex-bv, Math.max(.5, 5.2-bv)]]);
+  C.ext(seatPoly(1.7, 0),    cm(10.2), fab,  0, cm(61.4-1.7), 0, 'xz', cm(1.7));   // 座箱 51.2~61.4
+  C.ext(seatPoly(.9, -1.7),  cm(2.6),  fab,  0, cm(62.0-.9),  0, 'xz', cm(.9));    // 顶面微鼓 59.4~62.0
+  C.ext(seatPoly(.5, .25),   cm(1.4),  fabD, 0, cm(53.6-.5),  0, 'xz', cm(.5));    // 布罩下缘缝边
+
+  /* ---------- 靠背：上窄下宽、顶部大圆角的软包板，后倾 10.9° ---------- */
+  const TR = .19, cB = Math.cos(TR), sB = Math.sin(TR);
+  const backPoly = (bv, ex) => rp([
+    [-(19.5+ex-bv), -(2.0+ex-bv), 1.8],
+    [ (19.5+ex-bv), -(2.0+ex-bv), 1.8],
+    [ (17.3+ex-bv),  33.6+ex-bv,  8.4],
+    [-(17.3+ex-bv),  33.6+ex-bv,  8.4]]);
+  /* 主板：厚 7cm，顶点落在 h=97，后缘落在 z=-24 */
+  const bpy = 97.0 - (33.6*cB + 5.4*sB), bpz = -24.0 + (33.6*sB + 1.6*cB);
+  C.ext(backPoly(1.6, 0), cm(7.0), fab, 0, cm(bpy), cm(bpz), 'xy', cm(1.6)).rotation.x = -TR;
+  /* 正面软垫：沿背板法向前移 5.8cm */
+  C.ext(backPoly(.8, -2.4), cm(2.2), fab, 0, cm(bpy+5.8*sB), cm(bpz+5.8*cB), 'xy', cm(.8)).rotation.x = -TR;
+  /* 布罩沿边一圈明缝（前后各一道，夹在厚度中间） */
+  C.ext(backPoly(.35, .15), cm(1.0), fabD, 0, cm(bpy+2.35*sB), cm(bpz+2.35*cB), 'xy', cm(.35)).rotation.x = -TR;
+
+  C.g.updateMatrixWorld(true);
+  const bb = new T.Box3().setFromObject(C.g), off = new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x -= off.x; ch.position.z -= off.z; }
+};
+
+MODELS['skogsta-stool'] = (C) => {
+  const cm = C.cm, T = C.THREE;
+  /* SKOGSTA 吧凳（座高62cm）：全实木相思木温莎式——
+     圆车腿四面大外撇、实木马鞍座、弯木半圆背弓 + 3 根车圆背档、四面圆棒横撑（前后低、两侧高）。 */
+  const woodC = C.col.clone(); woodC.offsetHSL(0, .10, -.02);   // 相思木比目录色再暖一档
+  /* 相思木本色偏暖：envMapIntensity / clearcoat 一高就把饱和度冲没（见 AGENTS.md §5.4），压到 .22 才留得住木色 */
+  const wood  = C.M(woodC, {wood:'birch', rough:.54, clear:.13, clearRough:.30, envI:.22});
+  const woodD = C.M(woodC.clone().multiplyScalar(.86), {wood:'birch', rough:.58, clear:.10, envI:.20});
+  const screw = C.M(0x8b9096, {metal:.85, rough:.34, envI:.8});
+  const V = T.Vector3;
+
+  const rp = (pts) => { const o = [], n = pts.length;
+    for(let i=0;i<n;i++){ const p=pts[i], a=pts[(i+n-1)%n], b=pts[(i+1)%n];
+      const l1=Math.hypot(a[0]-p[0],a[1]-p[1])||1e-4, l2=Math.hypot(b[0]-p[0],b[1]-p[1])||1e-4;
+      const u1=[(a[0]-p[0])/l1,(a[1]-p[1])/l1], u2=[(b[0]-p[0])/l2,(b[1]-p[1])/l2];
+      const ang=Math.acos(Math.max(-1,Math.min(1,u1[0]*u2[0]+u1[1]*u2[1])));
+      const t=Math.min(p[2]/Math.max(.05,Math.tan(ang/2)), l1*.5, l2*.5);
+      const A=[p[0]+u1[0]*t,p[1]+u1[1]*t], B=[p[0]+u2[0]*t,p[1]+u2[1]*t];
+      for(let k=0;k<=7;k++){ const s=k/7, m=1-s;
+        o.push([cm(m*m*A[0]+2*m*s*p[0]+s*s*B[0]), cm(m*m*A[1]+2*m*s*p[1]+s*s*B[1])]); } }
+    return o; };
+
+  /* ---------- 四条车圆腿：脚下 Ø3.2、腿顶 Ø4.2，前后左右都大幅外撇 ---------- */
+  const LT = 59.0, rB = 1.45, rT = 2.2;
+  const foot = (sx,sz)=>[sx*18.9, sz*21.4], top = (sx,sz)=>[sx*13.8, sz*12.6];
+  for(const sx of [-1,1]) for(const sz of [-1,1]){
+    const f = foot(sx,sz), t = top(sx,sz);
+    const dx = cm(t[0]-f[0]), dz = cm(t[1]-f[1]), dy = cm(LT), L = Math.hypot(dx,dy,dz);
+    const lift = cm(rB) * Math.hypot(dx,dz) / L;               // 斜柱底面圆盘最低点抬到 y=0
+    const m = C.cyl(cm(rT), cm(rB), L, wood,
+                    cm(f[0]+t[0])/2, lift + dy/2 - L/2, cm(f[1]+t[1])/2, 16);
+    m.quaternion.setFromUnitVectors(new V(0,1,0), new V(dx/L,dy/L,dz/L));
+  }
+  const legX = (y)=> 18.9 + (13.8-18.9)*(y/LT), legZ = (y)=> 21.4 + (12.6-21.4)*(y/LT);
+
+  /* ---------- 圆棒横撑：前后 20cm（前撑当踏脚），两侧 25cm，端头带一颗螺钉 ---------- */
+  const yA = 20.0, yB = 25.0;
+  for(const sz of [-1,1]){
+    C.tube(cm(2*legX(yA)), cm(1.55), wood, 0, cm(yA), sz*cm(legZ(yA)), 'x');
+    for(const sx of [-1,1]) C.cyl(cm(.42), cm(.42), cm(.5), screw,
+      sx*cm(legX(yA)-1.2), cm(yA+1.3), sz*cm(legZ(yA)), 10);
+  }
+  for(const sx of [-1,1]){
+    C.tube(cm(2*legZ(yB)), cm(1.15), wood, sx*cm(legX(yB)), cm(yB), 0, 'z');
+    for(const sz of [-1,1]) C.cyl(cm(.38), cm(.38), cm(.5), screw,
+      sx*cm(legX(yB)), cm(yB+.95), sz*cm(legZ(yB)-1.0), 10);
+  }
+
+  /* ---------- 实木马鞍座：中段最宽的圆润六边轮廓，厚 3.6cm，下缘倒角一圈 ---------- */
+  const seatPoly = (bv, ex) => rp([
+    [-(17.0+ex-bv),  18.0+ex-bv, 6.5],
+    [-(20.4+ex-bv),   2.0+ex-bv, 11.0],
+    [-(16.0+ex-bv), -(18.5+ex-bv), 6.0],
+    [ (16.0+ex-bv), -(18.5+ex-bv), 6.0],
+    [ (20.4+ex-bv),   2.0+ex-bv, 11.0],
+    [ (17.0+ex-bv),  18.0+ex-bv, 6.5]]);
+  C.ext(seatPoly(.9, 0),   cm(3.6), wood,  0, cm(62.0-.9), 0, 'xz', cm(.9));      // 58.4~62.0
+  C.ext(seatPoly(.5, -1.6),cm(1.6), woodD, 0, cm(58.6-.5), 0, 'xz', cm(.5));      // 座下收口
+
+  /* ---------- 背弓：半圆形弯木带（下端两根立柱插进座面），后倾 11.5° ---------- */
+  const TB = .20, cB = Math.cos(TB), sB = Math.sin(TB);
+  const yc = 14.5, Ro = 13.8, Ri = 11.5, y0 = -4.5, xo0 = 14.5, xi0 = 9.7;
+  const bow = [], NS = 7, NA = 20;
+  for(let i=0;i<=NS;i++){ const t=i/NS; bow.push([cm(-(xo0+(Ro-xo0)*t)), cm(y0+(yc-y0)*t)]); }
+  for(let i=1;i<NA;i++){ const a=Math.PI-i/NA*Math.PI; bow.push([cm(Ro*Math.cos(a)), cm(yc+Ro*Math.sin(a))]); }
+  for(let i=NS;i>=0;i--){ const t=i/NS; bow.push([cm(xo0+(Ro-xo0)*t), cm(y0+(yc-y0)*t)]); }
+  for(let i=0;i<=NS;i++){ const t=i/NS; bow.push([cm(xi0+(Ri-xi0)*t), cm(y0+(yc-y0)*t)]); }
+  for(let i=1;i<NA;i++){ const a=i/NA*Math.PI; bow.push([cm(Ri*Math.cos(a)), cm(yc+Ri*Math.sin(a))]); }
+  for(let i=NS;i>=0;i--){ const t=i/NS; bow.push([cm(-(xi0+(Ri-xi0)*t)), cm(y0+(yc-y0)*t)]); }
+  const bpy = 91.0 - (29.0*cB + 1.7*sB), bpz = -13.5 - (-4.5*sB + .5*cB);
+  C.ext(bow, cm(2.4), wood, 0, cm(bpy), cm(bpz), 'xy', cm(.7)).rotation.x = -TB;
+
+  /* ---------- 3 根车圆背档：由座面直插内弧 ---------- */
+  const bx = (lx,ly,lz)=>[cm(lx), cm(bpy + ly*cB + lz*sB), cm(bpz - ly*sB + lz*cB)];
+  for(const lx of [-7.2, 0, 7.2]){
+    const yTop = yc + Math.sqrt(Math.max(0, (Ri-.7)*(Ri-.7) - lx*lx)) + .6, yBot = -3.5;
+    const p = bx(lx, (yTop+yBot)/2, 1.2), L = cm(yTop-yBot);
+    const m = C.cyl(cm(.78), cm(.95), L, wood, p[0], p[1]-L/2, p[2], 14);
+    m.rotation.x = -TB;
+  }
+
+  C.g.updateMatrixWorld(true);
+  const bb = new T.Box3().setFromObject(C.g), off = new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x -= off.x; ch.position.z -= off.z; }
+};
+
+MODELS['franklin-fold'] = (C) => {
+  const cm = C.cm, T = C.THREE, V = T.Vector3;
+  /* FRANKLIN 折叠吧凳（座高63cm）：两副连续弯钢管交叉铰接——
+     外框（前腿+靠背弓）一根管从左前脚绕到右前脚，中途在踏脚处折弯并焊一根带灰色套的踏脚杆；
+     内框（座面框+后腿）一根管从左后脚绕座面前缘到右后脚。座板与背板都是白色覆膜桦木胶合板（露胶合层边）。 */
+  const tube = C.M(C.col, {rough:.42, metal:.20, envI:.42});
+  const lam  = C.M(C.col.clone().lerp(new T.Color(0xffffff), .25), {rough:.36, clear:.30, clearRough:.16, envI:.30});
+  const ply  = C.M(0xd7b98c, {wood:'birch', rough:.56, clear:.16, envI:.4});
+  const gray = C.M(0x63676b, {plastic:true, rough:.62, envI:.16});
+  const rivet= C.M(0x8e9398, {metal:.82, rough:.34, envI:.8});
+
+  /* 相邻管段必须多伸出一个半径互相搭接：C.tube 的胶囊端帽正好收在端点上，
+     直接首尾相接会在每个折点掐出一道腰，看起来像一串香肠。 */
+  const seg = (p,q,r,m)=>{ const dx=q[0]-p[0], dy=q[1]-p[1], dz=q[2]-p[2], L=Math.hypot(dx,dy,dz)||1e-4;
+    const mm=C.tube(L+2*r, r, m, (p[0]+q[0])/2, (p[1]+q[1])/2, (p[2]+q[2])/2, 'y');
+    mm.quaternion.setFromUnitVectors(new V(0,1,0), new V(dx/L,dy/L,dz/L)); return mm; };
+  const path = (pl,r,m)=>{ for(let i=0;i<pl.length-1;i++) seg(pl[i],pl[i+1],r,m); };
+  const P = (x,y,z)=>[cm(x), cm(y), cm(z)];
+
+  const rp = (pts) => { const o = [], n = pts.length;
+    for(let i=0;i<n;i++){ const p=pts[i], a=pts[(i+n-1)%n], b=pts[(i+1)%n];
+      const l1=Math.hypot(a[0]-p[0],a[1]-p[1])||1e-4, l2=Math.hypot(b[0]-p[0],b[1]-p[1])||1e-4;
+      const u1=[(a[0]-p[0])/l1,(a[1]-p[1])/l1], u2=[(b[0]-p[0])/l2,(b[1]-p[1])/l2];
+      const ang=Math.acos(Math.max(-1,Math.min(1,u1[0]*u2[0]+u1[1]*u2[1])));
+      const t=Math.min(p[2]/Math.max(.05,Math.tan(ang/2)), l1*.5, l2*.5);
+      const A=[p[0]+u1[0]*t,p[1]+u1[1]*t], B=[p[0]+u2[0]*t,p[1]+u2[1]*t];
+      for(let k=0;k<=7;k++){ const s=k/7, m=1-s;
+        o.push([cm(m*m*A[0]+2*m*s*p[0]+s*s*B[0]), cm(m*m*A[1]+2*m*s*p[1]+s*s*B[1])]); } }
+    return o; };
+
+  const RA = cm(1.15), RB = cm(1.10);
+  /* 外框（前腿 → 座面外侧 → 靠背弓），一根连续管 */
+  const A = [[23.45,  1.55, 20.55], [22.20, 19.00, 15.10], [20.60, 36.00,  4.90],
+             [19.15, 47.00, -3.40], [17.80, 61.50,-11.50], [17.40, 67.00,-15.20],
+             [17.00, 78.00,-17.45], [16.60, 88.00,-19.55], [15.70, 91.45,-20.30],
+             [13.00, 93.15,-20.60], [ 9.50, 93.55,-20.60]];
+  for(const s of [-1,1]) path(A.map(p=>P(s*p[0], p[1], p[2])), RA, tube);
+  seg(P(-9.5, 93.55, -20.60), P(9.5, 93.55, -20.60), RA, tube);          // 靠背顶横梁
+  /* 踏脚横杆（外框），套灰色塑料护套 */
+  seg(P(-22.20, 19.00, 15.10), P(22.20, 19.00, 15.10), cm(1.05), tube);
+  C.tube(cm(37.0), cm(1.48), gray, 0, cm(19.00), cm(15.10), 'x');
+  /* 座面后部托杆（外框） */
+  seg(P(-17.85, 60.20, -11.80), P(17.85, 60.20, -11.80), cm(1.00), tube);
+
+  /* 内框（后腿 → 座面侧边 → 前横杆），一根连续管 */
+  const B = [[13.80,  1.55,-19.20], [15.30, 24.00,-11.80], [16.60, 47.00, -3.40],
+             [16.10, 57.50,  4.60], [16.00, 60.20,  9.40], [16.00, 60.30, 15.60]];
+  for(const s of [-1,1]) path(B.map(p=>P(s*p[0], p[1], p[2])), RB, tube);
+  seg(P(-16.0, 60.30, 15.60), P(16.0, 60.30, 15.60), RB, tube);          // 座面前横杆
+  /* 交叉处铆钉 */
+  for(const s of [-1,1]) C.cyl(cm(.62), cm(.62), cm(3.4), rivet, s*cm(17.9), cm(47.0)-cm(.31), cm(-3.40), 12)
+    .rotation.z = Math.PI/2;
+  /* 四个灰色脚垫 */
+  for(const s of [-1,1]){
+    C.lathe([[cm(.1),0],[cm(1.30),0],[cm(1.45),cm(.6)],[cm(1.30),cm(2.2)],[cm(.1),cm(2.7)]], gray, s*cm(23.45), 0, cm(20.55), 16);
+    C.lathe([[cm(.1),0],[cm(1.30),0],[cm(1.45),cm(.6)],[cm(1.30),cm(2.2)],[cm(.1),cm(2.7)]], gray, s*cm(13.80), 0, cm(-19.20), 16);
+  }
+
+  /* ---------- 座板：34×34 白色覆膜胶合板，边缘露桦木胶合层 ---------- */
+  const sq = (bv, ex, rr) => rp([
+    [-(17.0+ex-bv),  17.0+ex-bv, rr], [-(17.0+ex-bv), -(17.0+ex-bv), rr+1.6],
+    [ (17.0+ex-bv), -(17.0+ex-bv), rr+1.6], [ (17.0+ex-bv),  17.0+ex-bv, rr]]);
+  C.ext(sq(.35, 0, 4.0),   cm(1.55), ply, 0, cm(62.90-.35), 0, 'xz', cm(.35));   // 芯层 61.35~62.90
+  C.ext(sq(.18, -.14, 4.0),cm(.42),  lam, 0, cm(62.94-.18), 0, 'xz', cm(.18));   // 上覆膜
+  C.ext(sq(.18, -.14, 4.0),cm(.42),  lam, 0, cm(61.53-.18), 0, 'xz', cm(.18));   // 下覆膜
+  for(const sx of [-1,1]) for(const sz of [-1,1])
+    C.cyl(cm(.45), cm(.45), cm(.4), rivet, sx*cm(15.6), cm(61.15), sz*cm(9.0), 10);
+
+  /* ---------- 背板：31×13.8 圆角胶合板，卡在两根立管之间，随背弓后倾 11.5° ---------- */
+  const TF = .20, cF = Math.cos(TF), sF = Math.sin(TF);
+  const bp = (bv, ex) => rp([
+    [-(15.5+ex-bv), -(6.9+ex-bv), 3.4], [ (15.5+ex-bv), -(6.9+ex-bv), 3.4],
+    [ (15.5+ex-bv),  (6.9+ex-bv), 4.2], [-(15.5+ex-bv),  (6.9+ex-bv), 4.2]]);
+  const py = 86.0, pz = -17.30;
+  C.ext(bp(.32, 0), cm(1.45), ply, 0, cm(py), cm(pz), 'xy', cm(.32)).rotation.x = -TF;
+  C.ext(bp(.16, -.14), cm(.40), lam, 0, cm(py+1.32*sF), cm(pz+1.32*cF), 'xy', cm(.16)).rotation.x = -TF;
+  C.ext(bp(.16, -.14), cm(.40), lam, 0, cm(py-.09*sF),  cm(pz-.09*cF),  'xy', cm(.16)).rotation.x = -TF;
+  for(const sx of [-1,1]) for(const sy of [-1,1]){
+    const q = [cm(sx*13.6), cm(py + sy*4.4*cF - .2*sF), cm(pz - sy*4.4*sF - .2*cF)];
+    C.cyl(cm(.42), cm(.42), cm(.4), rivet, q[0], q[1], q[2], 10).rotation.x = Math.PI/2 - TF;
+  }
+
+  C.g.updateMatrixWorld(true);
+  const bb = new T.Box3().setFromObject(C.g), off = new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x -= off.x; ch.position.z -= off.z; }
+};
+
+MODELS['flintan'] = (C) => {
+  const cm=C.cm, T=C.THREE, D=Math.PI/180;
+  const C0 = C.col ? C.col.clone() : new T.Color(0x3e4249);
+  const mSeat = C.M(C0, {fabric:true, rough:.94, envI:.15});                       // 座面织物
+  const mShell= C.M(C0.clone().multiplyScalar(.92), {fabric:true, rough:.95, envI:.12}); // 靠背包边
+  const mMesh = C.M(C0.clone().multiplyScalar(.60), {rough:.90, envI:.10, flat:true});   // 网布
+  mMesh.map=meshWeaveTexture(); mMesh.normalMap=normalFromTexture(meshWeaveTexture(),1.6);
+  const mBase = C.M(0x26282c, {rough:.44, metal:.34, envI:.55});                   // 五爪烤漆钢
+  const mPla  = C.M(0x2b2e33, {plastic:true, rough:.46, envI:.28});                // 塑料件
+  const mMech = C.M(0x35383d, {rough:.50, metal:.30, envI:.50});                   // 倾仰机构
+  const mDark = C.M(0x141618, {rough:.40, metal:.22, envI:.42});                   // 胎/手柄
+  const mChr  = C.M(0xb0b5ba, {rough:.26, metal:.92, envI:.95});                   // 轮毂
+
+  /* ── 五爪底座：跨距 71cm，一爪指向正后方（-z），与官方正视图 5 轮排布一致 ── */
+  const RC=33.66, RW=3.3;
+  const armP=[[0,7.6],[10,7.4],[20,7.2],[28,7.1],[32,7.0],[34.4,7.7],
+              [34.4,10.3],[32,10.7],[24,11.5],[13,12.7],[0,13.8]].map(p=>[cm(p[0]),cm(p[1])]);
+  const AW=cm(5.6), AB=cm(0.6);
+  C.rep(5,(i)=>{
+    const psi=(180+i*72)*D;
+    const arm=C.ext(armP, AW, mBase, 0,0,0, 'xy', AB);
+    arm.geometry.translate(0,0,-(AW-2*AB)/2);
+    arm.rotation.y=psi-Math.PI/2;
+    chairCaster(C, psi, RC, RW, mPla, mDark, mChr);
+  });
+  C.lathe([[cm(6.6),cm(5.8)],[cm(6.9),cm(9.0)],[cm(6.2),cm(11.9)],[cm(4.6),cm(13.3)],[cm(2.6),cm(13.8)]],
+          mBase, 0,0,0, 26);
+
+  /* ── 气压升降柱：钟形外罩 + 外套管 + 卡箍 + 活塞杆（画在最高档 = 座高 58）── */
+  C.lathe([[cm(4.6),cm(11.9)],[cm(4.5),cm(15.5)],[cm(3.8),cm(20.5)],[cm(3.5),cm(24.5)]], mPla, 0,0,0, 24);
+  C.cyl(cm(3.4), cm(3.5), cm(10.2), mPla, 0, cm(24.4), 0, 24);
+  C.torus(cm(3.2), cm(0.42), mDark, 0, cm(34.7), 0, Math.PI/2);
+  C.cyl(cm(2.5), cm(2.5), cm(7.6), mMech, 0, cm(34.6), 0, 20);
+
+  /* ── 倾仰机构 + 座板 + 软包座面（座面前移 3cm，立柱落在座面后 1/3）── */
+  C.rb(cm(17.0), cm(5.6), cm(22.5), cm(1.5), mMech, 0, cm(41.6), cm(-1.0));
+  C.rb(cm(11.0), cm(2.6), cm(9.0), cm(0.8), mPla,  0, cm(39.2), cm(-1.0));
+  C.lathe([[cm(2.2),cm(35.4)],[cm(3.0),cm(37.0)],[cm(2.8),cm(38.8)],[cm(1.4),cm(39.6)]],
+          mPla, 0, 0, cm(7.0), 16);                                                // 张力旋钮
+  C.rb(cm(19.0), cm(1.8), cm(22.0), cm(1.0), mMech, 0, cm(47.1), cm(2.0));         // 座板
+  /* 座面：超椭圆外形（前宽后略收）+ 顶面微鼓 + 中缝包边，顶面 58.0 = 最高档座高 */
+  const seatPts=[]; { const n=32; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2;
+    const s2=Math.sin(a), c2=Math.cos(a), ex=0.38;
+    const sx=Math.sign(s2)*Math.pow(Math.abs(s2),ex), cz=Math.sign(c2)*Math.pow(Math.abs(c2),ex);
+    seatPts.push([cm(20.6*sx*(1-0.09*Math.max(0,-c2))), cm(22.1*cz)]); } }         // 已扣掉倒角 2.4
+  C.ext(seatPts, cm(8.5), mSeat, 0, cm(55.0), cm(3.0), 'xz', cm(2.4));             // 48.9→57.4，外廓 46×49
+  C.ext(seatPts.map(p=>[p[0]*0.95,p[1]*0.95]), cm(2.8), mSeat, 0, cm(56.8), cm(3.0), 'xz', cm(1.2));
+  C.ext(seatPts.map(p=>[p[0]*1.11,p[1]*1.11]), cm(1.3), mShell, 0, cm(53.0), cm(3.0), 'xz', cm(0.5));
+  for(const s of [-1,1]){                                                          // 升降 / 倾仰手柄
+    C.tube(cm(13.0), cm(0.72), mDark, cm(s*14.0), cm(45.0), cm(s>0?3.0:-2.0), 'x');
+    C.tube(cm(3.6),  cm(0.72), mDark, cm(s*20.0), cm(43.4), cm(s>0?3.0:-2.0), 'y');
+    C.sph(cm(0.95), mDark, cm(s*20.0), cm(41.8), cm(s>0?3.0:-2.0), 12);
+  }
+  for(const s of [-1,1])                                                           // 靠背下连接臂
+    C.rb(cm(3.2), cm(3.4), cm(17.0), cm(0.8), mMech, cm(s*8.0), cm(44.6), cm(-13.5));
+
+  /* ── 盾形网布靠背：y 48→114（66cm），侧视是「开口朝前」的 C 形曲线 ── */
+  const HB=66, HF=cm(HB), BOW=0.197;                                               // 边缘最多往后收 6cm
+  const sp=chairSpl([[48,-25.5],[55,-24.0],[63,-23.2],[73,-23.2],[84,-24.6],
+                     [95,-27.0],[105,-29.4],[114,-32.0]].map(p=>[cm(p[0]),cm(p[1])]));
+  const wOut=chairTab([[0,9.0],[0.05,14.5],[0.11,20.5],[0.18,25.0],[0.26,28.4],[0.35,30.3],
+                       [0.45,30.5],[0.58,30.0],[0.70,28.8],[0.81,26.6],[0.89,23.4],
+                       [0.95,18.2],[1,9.5]]);
+  const wIn =chairTab([[0.09,7.0],[0.125,13.5],[0.19,20.0],[0.27,24.0],[0.37,26.6],[0.48,27.0],
+                       [0.60,26.5],[0.72,25.2],[0.82,23.0],[0.89,20.0],[0.935,15.0],[0.955,10.0]]);
+  chairBend(C.ext(chairOutl(cm,wOut,HB,0,1,26), cm(2.6), mShell, 0,0,0,'xy', cm(0.55)),
+            sp, HF, BOW, chairMid(cm(2.6), cm(0.55)));
+  chairBend(C.ext(chairOutl(cm,wIn,HB,0.09,0.955,22), cm(4.0), mMesh, 0,0,0,'xy'),
+            sp, HF, BOW, chairMid(cm(4.0), 0));
+  for(const bt of [0.350,0.405,0.460]){                                            // 三道腰托横带
+    const hw=wIn(bt)-1.2;
+    const pts=[[cm(hw),cm((bt-0.017)*HB)],[cm(hw),cm((bt+0.017)*HB)],
+               [-cm(hw),cm((bt+0.017)*HB)],[-cm(hw),cm((bt-0.017)*HB)]];
+    chairBend(C.ext(pts, cm(5.4), mShell, 0,0,0,'xy'), sp, HF, BOW, chairMid(cm(5.4), 0));
+  }
+
+  /* ── T 形扶手：座下安装座 + 收分立柱 + 梭形软垫（顶面 81.8 ≈ 最高档 82）── */
+  const padPts=[]; { const n=24; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2;
+    const sa=Math.sin(a), ca=Math.cos(a);
+    padPts.push([ cm(3.7*Math.sign(sa)*Math.pow(Math.abs(sa),0.55)),
+                  cm(11.8*Math.sign(ca)*Math.pow(Math.abs(ca),0.75)) ]); } }
+  for(const s of [-1,1]){
+    C.rb(cm(8.0), cm(3.6), cm(7.5), cm(1.2), mPla, cm(s*22.4), cm(45.0), cm(-2.5));
+    C.cyl(cm(2.1), cm(2.9), cm(33.0), mPla, cm(s*25.6), cm(45.4), cm(-2.5), 16);
+    C.ext(padPts, cm(3.4), mPla, cm(s*25.6), cm(80.9), cm(-1.0), 'xz', cm(0.9));
+  }
+
+  C.g.updateMatrixWorld(true);                                                     // 水平重心归零
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
+MODELS['markus'] = (C) => {
+  const cm=C.cm, T=C.THREE, D=Math.PI/180;
+  const C0 = C.col ? C.col.clone() : new T.Color(0x3e4249);
+  const mSeat = C.M(C0, {fabric:true, rough:.95, envI:.15});
+  const mShell= C.M(C0.clone().multiplyScalar(.92), {fabric:true, rough:.95, envI:.12});
+  const mMesh = C.M(C0.clone().multiplyScalar(.60), {rough:.90, envI:.10, flat:true});
+  mMesh.map=meshWeaveTexture(); mMesh.normalMap=normalFromTexture(meshWeaveTexture(),1.6);
+  const mBase = C.M(0x232529, {rough:.46, metal:.32, envI:.52});
+  const mPla  = C.M(0x2a2d31, {plastic:true, rough:.44, envI:.28});
+  const mMech = C.M(0x33363b, {rough:.50, metal:.28, envI:.48});
+  const mDark = C.M(0x131517, {rough:.40, metal:.22, envI:.42});
+  const mHubM = C.M(0x8f959b, {rough:.34, metal:.85, envI:.90});
+  const mLumb = C.M(C0.clone().multiplyScalar(.40), {fabric:true, rough:.95, envI:.10}); // 腰托垫
+
+  /* ── 五爪底座：跨距 62cm，一爪指向正后方 ── */
+  const RC=29.05, RW=3.2;
+  const armP=[[0,7.4],[9,7.2],[18,7.0],[24,6.9],[27.6,6.8],[30.0,7.5],
+              [30.0,10.0],[27.6,10.4],[21,11.2],[11,12.2],[0,13.2]].map(p=>[cm(p[0]),cm(p[1])]);
+  const AW=cm(5.2), AB=cm(0.55);
+  C.rep(5,(i)=>{
+    const psi=(180+i*72)*D;
+    const arm=C.ext(armP, AW, mBase, 0,0,0, 'xy', AB);
+    arm.geometry.translate(0,0,-(AW-2*AB)/2);
+    arm.rotation.y=psi-Math.PI/2;
+    chairCaster(C, psi, RC, RW, mPla, mDark, mHubM);
+  });
+  C.lathe([[cm(6.3),cm(5.6)],[cm(6.6),cm(8.6)],[cm(5.9),cm(11.4)],[cm(4.4),cm(12.8)],[cm(2.5),cm(13.3)]],
+          mBase, 0,0,0, 26);
+
+  /* ── 气压升降柱（画在最高档 = 座高 57）── */
+  C.lathe([[cm(4.6),cm(11.4)],[cm(4.5),cm(15.0)],[cm(3.8),cm(19.5)],[cm(3.5),cm(22.5)]], mPla, 0,0,0, 24);
+  C.cyl(cm(3.4), cm(3.5), cm(9.2), mPla, 0, cm(22.4), 0, 24);
+  C.torus(cm(3.2), cm(0.42), mDark, 0, cm(31.7), 0, Math.PI/2);
+  C.cyl(cm(2.5), cm(2.5), cm(8.2), mMech, 0, cm(31.6), 0, 20);
+
+  /* ── 倾仰机构：主壳 + 下鼓包 + 双拨杆 + 张力旋钮 ── */
+  C.rb(cm(18.5), cm(6.0), cm(23.0), cm(1.6), mMech, 0, cm(39.4), cm(-0.5));
+  C.rb(cm(12.0), cm(3.0), cm(10.0), cm(1.0), mPla, 0, cm(36.6), cm(-1.5));
+  C.lathe([[cm(2.6),cm(31.4)],[cm(3.4),cm(33.4)],[cm(3.2),cm(35.6)],[cm(1.6),cm(36.8)]], mPla, 0,0,cm(6.5), 18);
+  for(const s of [-1,1]){
+    const pd=C.rb(cm(15.0), cm(1.3), cm(3.6), cm(0.6), mPla, cm(s*15.0), cm(43.2), cm(s>0?6.0:-5.0));
+    pd.rotation.y=s*10*D;
+    C.rb(cm(4.2), cm(1.6), cm(4.6), cm(0.7), mPla, cm(s*21.4), cm(43.0), cm(s>0?7.4:-6.4));
+  }
+  C.rb(cm(22.0), cm(2.0), cm(24.0), cm(1.2), mMech, 0, cm(44.2), cm(1.5));         // 座板
+  /* 座面：超椭圆外形（前宽后收）+ 顶面微鼓 + 中缝包边，顶面 57.0 = 最高档座高 */
+  const seatPts=[]; { const n=32; for(let i=0;i<n;i++){ const a=i/n*Math.PI*2;
+    const s2=Math.sin(a), c2=Math.cos(a), ex=0.38;
+    const sx=Math.sign(s2)*Math.pow(Math.abs(s2),ex), cz=Math.sign(c2)*Math.pow(Math.abs(c2),ex);
+    seatPts.push([cm(23.6*sx*(1-0.11*Math.max(0,-c2))), cm(20.6*cz)]); } }         // 已扣掉倒角 2.9
+  C.ext(seatPts, cm(10.2), mSeat, 0, cm(53.4), cm(2.5), 'xz', cm(2.9));            // 46.0→56.2，外廓 53×47
+  C.ext(seatPts.map(p=>[p[0]*0.955,p[1]*0.955]), cm(3.0), mSeat, 0, cm(55.7), cm(2.5), 'xz', cm(1.3));
+  C.ext(seatPts.map(p=>[p[0]*1.114,p[1]*1.114]), cm(1.4), mShell, 0, cm(50.0), cm(2.5), 'xz', cm(0.5));
+
+  /* ── 高背：y 47→122（75cm），下段织物、中上段网布 + 腰托垫 ── */
+  const HB=75, HF=cm(HB), BOW=0.136;
+  const sp=chairSpl([[47,-24.5],[55,-23.6],[65,-23.0],[75,-23.2],[86,-24.2],
+                     [97,-25.6],[109,-26.8],[122,-28.0]].map(p=>[cm(p[0]),cm(p[1])]));
+  const wOut=chairTab([[0,15.0],[0.05,21.5],[0.11,25.8],[0.18,27.6],[0.26,28.0],[0.36,27.2],
+                       [0.48,25.8],[0.60,24.4],[0.72,23.0],[0.82,21.8],[0.90,20.8],
+                       [0.96,19.0],[1,14.5]]);
+  const wIn =chairTab([[0.235,7.0],[0.28,16.0],[0.34,22.4],[0.44,22.8],[0.56,21.8],[0.68,20.2],
+                       [0.80,18.6],[0.88,17.4],[0.925,15.2],[0.955,10.5]]);
+  chairBend(C.ext(chairOutl(cm,wOut,HB,0,1,26), cm(3.4), mShell, 0,0,0,'xy', cm(0.7)),
+            sp, HF, BOW, chairMid(cm(3.4), cm(0.7)));
+  chairBend(C.ext(chairOutl(cm,wIn,HB,0.235,0.955,22), cm(3.9), mMesh, 0,0,0,'xy'),
+            sp, HF, BOW, chairMid(cm(3.9), 0));
+  {                                                                                // 腰托垫（横向透镜形）
+    const lp=[], n=18, t0=0.245, t1=0.385;
+    const hw=(u)=>cm(1.0+17.0*Math.pow(Math.sin(Math.PI*u), 0.42));
+    for(let i=0;i<=n;i++){ const u=i/n; lp.push([ hw(u), cm((t0+(t1-t0)*u)*HB)]); }
+    for(let i=n;i>=0;i--){ const u=i/n; lp.push([-hw(u), cm((t0+(t1-t0)*u)*HB)]); }
+    chairBend(C.ext(lp, cm(4.5), mLumb, 0,0,0,'xy', cm(0.7)),
+              sp, HF, BOW, chairMid(cm(4.5), cm(0.7)));
+  }
+
+  /* ── 头枕：颈托块 + 41×17 软包枕，顶面正好 140 ── */
+  C.rb(cm(21.0), cm(6.4), cm(6.8), cm(1.8), mShell, 0, cm(117.6), cm(-27.2));
+  const hr=C.rb(cm(41), cm(17), cm(8.4), cm(3.6), mSeat, 0, cm(122.65), cm(-26.9), 4);
+  hr.rotation.x=-0.08;
+  const hf2=C.rb(cm(35), cm(12.5), cm(3.0), cm(1.8), mShell, 0, cm(124.6), cm(-22.6), 3);
+  hf2.rotation.x=-0.08;
+
+  /* ── 环形固定扶手：D 形闭环（外圈顶部偏平，像实物的臂托段）+ 前后安装座
+        环顶 79 = 最高档扶手高；环底 49 埋进座面侧面，看起来是长在座面上的 ── */
+  {
+    const AZ=3.0, AY=64.2, E=0.68, N=26;
+    const loop=(A,B)=>{ const o=[];
+      for(let i=0;i<N;i++){ const a=i/N*Math.PI*2, s2=Math.sin(a), c2=Math.cos(a);
+        const fz=Math.sign(s2)*Math.pow(Math.abs(s2),E), fy=Math.sign(c2)*Math.pow(Math.abs(c2),E);
+        o.push([-cm(AZ+A*fz), cm(AY+B*fy)]); }                                   // 形状 x → 世界 -z
+      return o; };
+    const rp=chairRing(loop(15.0,14.4), loop(12.0,11.4));
+    for(const s of [-1,1]){
+      C.ext(rp, cm(4.2), mPla, cm(s>0?25.0:-28.6), 0, 0, 'zy', cm(0.6));
+      const pad=C.rb(cm(5.0), cm(3.2), cm(21.0), cm(1.5), mPla, cm(s*26.6), cm(75.4), cm(3.0));
+      pad.rotation.x=0.04;
+      C.rb(cm(5.6), cm(4.4), cm(5.8), cm(1.1), mPla, cm(s*25.4), cm(48.0), cm(-10.6));
+      C.rb(cm(5.6), cm(4.4), cm(5.8), cm(1.1), mPla, cm(s*25.4), cm(48.0), cm(16.6));
+    }
+  }
+
+  C.g.updateMatrixWorld(true);                                                     // 水平重心归零
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
+MODELS['teodores'] = (C) => {
+  const cm=C.cm, T=C.THREE, CM=cm(1);
+  const shellM = C.M(C.col, {plastic:true, rough:.36, clear:.34, clearRough:.26, envI:.26});
+  const paintM = C.M(C.col, {rough:.46, clear:.22, clearRough:.36, envI:.22});
+  const boltM  = C.M(0x8f959c, {rough:.26, metal:.88, envI:.85});
+  const glideM = C.M(0x3c3f44, {rough:.74, envI:.16});
+
+  const bar=(a,b,sA,sB,mat,pw,seg)=>{
+    const dx=b[0]-a[0], dy=b[1]-a[1], dz=b[2]-a[2];
+    const Lc=Math.hypot(dx,dy,dz)||1e-4, H=cm(Lc), n=seg||18, e=pw||4.2;
+    const geo=new T.CylinderGeometry(1,1,H,n,1), p=geo.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i), y=p.getY(i), z=p.getZ(i), r=Math.hypot(x,z);
+      const t=Math.min(1,Math.max(0,(y+H/2)/H));
+      const rx=cm(sA[0]+(sB[0]-sA[0])*t)/2, rz=cm(sA[1]+(sB[1]-sA[1])*t)/2;
+      if(r>1e-9){ const ca=Math.abs(x/r), sa=Math.abs(z/r);
+        const k=1/Math.pow(Math.pow(ca,e)+Math.pow(sa,e),1/e);
+        p.setX(i,x/r*k*rx); p.setZ(i,z/r*k*rz); }
+    }
+    geo.computeVertexNormals();
+    const m=new T.Mesh(geo,mat);
+    m.position.set(cm((a[0]+b[0])/2), cm((a[1]+b[1])/2), cm((a[2]+b[2])/2));
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), new T.Vector3(dx/Lc,dy/Lc,dz/Lc));
+    m.castShadow=m.receiveShadow=true; C.g.add(m); return m; };
+  const SM=(cl,n)=>{ const c=new T.CatmullRomCurve3(cl.map(q=>new T.Vector3(q[0],q[1],0)),false,'catmullrom',0.4);
+    return c.getSpacedPoints(n).map(v=>[v.x,v.y]); };
+  const BAND=(cl,th)=>{ const n=cl.length,A=[],B=[];
+    for(let i=0;i<n;i++){ const q=cl[i], a=cl[Math.max(0,i-1)], b=cl[Math.min(n-1,i+1)];
+      let tx=b[0]-a[0], ty=b[1]-a[1]; const L=Math.hypot(tx,ty)||1; tx/=L; ty/=L;
+      A.push([q[0]+ty*th/2, q[1]-tx*th/2]); B.push([q[0]-ty*th/2, q[1]+tx*th/2]); }
+    const o=[]; for(const q of A) o.push([cm(-q[0]),cm(q[1])]);
+    for(let i=n-1;i>=0;i--) o.push([cm(-B[i][0]),cm(B[i][1])]);
+    return o; };
+  const SHELL=(prof,W,mat,wf,bend,bev)=>{
+    const m=C.ext(prof, cm(W), mat, 0,0,0, 'zy', bev?cm(bev):0);
+    const g0=m.geometry; g0.computeBoundingBox();
+    const mid=(g0.boundingBox.min.z+g0.boundingBox.max.z)/2, p=g0.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const zz=-p.getX(i)/CM, yy=p.getY(i)/CM;
+      const nx=(p.getZ(i)-mid)*(wf?wf(zz,yy):1);
+      p.setZ(i,nx);
+      if(bend){ const d=bend(nx/CM,zz,yy);
+        p.setX(i, p.getX(i)-cm(d[0])); p.setY(i, p.getY(i)+cm(d[1])); }
+    }
+    // 挤出体自带的 UV 在这种曲面上会把纹理拉成竖条纹，按 (世界x, 世界y-世界z) 重投一遍
+    let ax0=1e9,ax1=-1e9,ay0=1e9,ay1=-1e9; const U=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ const u=p.getZ(i), v=p.getY(i)+p.getX(i);
+      U[i*2]=u; U[i*2+1]=v;
+      if(u<ax0)ax0=u; if(u>ax1)ax1=u; if(v<ay0)ay0=v; if(v>ay1)ay1=v; }
+    const su=1/Math.max(1e-4,ax1-ax0), sv=1/Math.max(1e-4,ay1-ay0);
+    for(let i=0;i<p.count;i++){ U[i*2]=(U[i*2]-ax0)*su; U[i*2+1]=(U[i*2+1]-ay0)*sv; }
+    g0.setAttribute('uv', new T.BufferAttribute(U,2));
+    g0.computeVertexNormals(); g0.computeBoundingBox(); m.position.set(0,0,0); return m; };
+  const RR=(w,d,r,n)=>{ const o=[], q=[[w/2-r,d/2-r],[-(w/2-r),d/2-r],[-(w/2-r),-(d/2-r)],[w/2-r,-(d/2-r)]];
+    for(let k=0;k<4;k++) for(let i=0;i<=n;i++){ const a=k*Math.PI/2+i/n*Math.PI/2;
+      o.push([q[k][0]+r*Math.cos(a), q[k][1]+r*Math.sin(a)]); }
+    return o; };
+
+  /* —— 腿：前腿两条 + 后腿两条（后腿在座面处折一下，一直通到靠背顶）—— */
+  for(const s of [-1,1]){
+    bar([s*18.5,45.4,14.2],[s*21.6,0.7,23.4],[2.7,3.6],[2.0,2.5],paintM);
+    bar([s*21.0,0.7,-26.2],[s*18.9,47.5,-18.4],[2.1,2.6],[2.5,3.8],paintM);
+    bar([s*18.9,42.5,-18.8],[s*18.4,79.0,-24.6],[2.6,3.8],[2.3,2.9],paintM);
+    for(const q of [[s*21.6,23.4],[s*21.0,-26.2]])
+      C.cyl(cm(1.30),cm(1.45),cm(0.9),glideM,cm(q[0]),0,cm(q[1]),14);
+  }
+
+  /* —— 座面：圆角方板 + 前缘/侧缘下卷 + 中间微凹 —— */
+  const seatTop=45.4, seatTh=1.45, bev=0.42;
+  const st=C.ext(RR(40,37,6.2,7).map(p=>[cm(p[0]),cm(p[1]-1.5)]), cm(seatTh), shellM,
+                 0, cm(seatTop-bev), 0, 'xz', cm(bev));
+  {
+    const p=st.geometry.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i)/CM, z=p.getY(i)/CM;
+      const ex=Math.max(0,(Math.abs(x)-15.0)/5.0), ef=Math.max(0,(z-11.0)/6.5);
+      const eb=Math.max(0,(-15.5-z)/4.5);
+      let dp = 1.9*ex*ex + 3.0*ef*ef - 1.2*eb*eb;
+      dp += 0.55*Math.max(0, 1-(x*x/260 + (z+2)*(z+2)/230));
+      p.setZ(i, p.getZ(i)+cm(dp));
+    }
+    st.geometry.computeVertexNormals(); st.geometry.computeBoundingBox();
+  }
+  /* 座面下的两个注塑凸台 + 前腿顶被座面侧缘包住的小圆角块 */
+  for(const s of [-1,1]) C.cyl(cm(1.5),cm(1.8),cm(1.1),shellM,s*cm(11),cm(42.6),cm(9.5),14);
+  for(const s of [-1,1]) C.rb(cm(2.8),cm(2.8),cm(4.0),cm(0.9),shellM,s*cm(18.1),cm(42.0),cm(13.8),3);
+
+  /* —— 靠背板：整体接近矩形，只有上两角是大圆角；横向内凹（两侧向前包）—— */
+  const bcl=[[-18.2,52.6],[-19.1,56.8],[-20.0,61.3],[-20.9,65.9],[-21.7,70.4],
+             [-22.3,74.4],[-22.5,77.4],[-21.8,79.2]];
+  const wfB=(z,y)=>{
+    let f=1;
+    const t=Math.max(0,(y-76.0)/3.6); f*=Math.sqrt(Math.max(0.05,1-t*t));
+    const b=Math.max(0,(53.9-y)/1.6); f*=Math.sqrt(Math.max(0.30,1-0.55*b*b));
+    return f*(0.955+0.045*Math.min(1,Math.max(0,(y-53)/18))); };
+  SHELL(BAND(SM(bcl,34),1.6), 41.5, shellM, wfB,
+        (x)=>[1.0*Math.pow(Math.abs(x)/20,2.1), 0], 0.36);
+
+  /* 靠背与后腿之间的连接台 + 四颗螺丝头 */
+  for(const s of [-1,1]) for(const q of [[57.5,-19.4],[70.0,-21.6]]){
+    const cp=C.rb(cm(2.6),cm(3.6),cm(2.2),cm(0.5),paintM,s*cm(18.6),cm(q[0]),cm(q[1]+0.9),3);
+    cp.rotation.x=-0.155;
+    C.cyl(cm(0.52),cm(0.52),cm(0.34),boltM,s*cm(18.6),cm(q[0]+1.7),cm(q[1]+2.35),12);
+  }
+
+  C.g.updateMatrixWorld(true);
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
+MODELS['odger'] = (C) => {
+  const cm=C.cm, T=C.THREE, CM=cm(1);
+  const tex=speckleTexture();
+  const base=C.col.clone().multiplyScalar(.86);
+  const bodyM=new T.MeshStandardMaterial({color:base, map:tex,
+    normalMap:normalFromTexture(tex,0.62), roughness:.78, metalness:0, envMapIntensity:.18});
+  const legM =new T.MeshStandardMaterial({color:base.clone().multiplyScalar(.95), map:tex,
+    normalMap:normalFromTexture(tex,0.62), roughness:.80, metalness:0, envMapIntensity:.16});
+  const glideM=C.M(0x2b2d31,{rough:.80,envI:.14});
+
+  const bar=(a,b,sA,sB,mat,pw,seg)=>{
+    const dx=b[0]-a[0], dy=b[1]-a[1], dz=b[2]-a[2];
+    const Lc=Math.hypot(dx,dy,dz)||1e-4, H=cm(Lc), n=seg||20, e=pw||2.6;
+    const geo=new T.CylinderGeometry(1,1,H,n,1), p=geo.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i), y=p.getY(i), z=p.getZ(i), r=Math.hypot(x,z);
+      const t=Math.min(1,Math.max(0,(y+H/2)/H));
+      const rx=cm(sA[0]+(sB[0]-sA[0])*t)/2, rz=cm(sA[1]+(sB[1]-sA[1])*t)/2;
+      if(r>1e-9){ const ca=Math.abs(x/r), sa=Math.abs(z/r);
+        const k=1/Math.pow(Math.pow(ca,e)+Math.pow(sa,e),1/e);
+        p.setX(i,x/r*k*rx); p.setZ(i,z/r*k*rz); }
+    }
+    geo.computeVertexNormals();
+    const m=new T.Mesh(geo,mat);
+    m.position.set(cm((a[0]+b[0])/2), cm((a[1]+b[1])/2), cm((a[2]+b[2])/2));
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), new T.Vector3(dx/Lc,dy/Lc,dz/Lc));
+    m.castShadow=m.receiveShadow=true; C.g.add(m); return m; };
+  const SM=(cl,n)=>{ const c=new T.CatmullRomCurve3(cl.map(q=>new T.Vector3(q[0],q[1],0)),false,'catmullrom',0.4);
+    return c.getSpacedPoints(n).map(v=>[v.x,v.y]); };
+  const BAND=(cl,th)=>{ const n=cl.length,A=[],B=[];
+    for(let i=0;i<n;i++){ const q=cl[i], a=cl[Math.max(0,i-1)], b=cl[Math.min(n-1,i+1)];
+      let tx=b[0]-a[0], ty=b[1]-a[1]; const L=Math.hypot(tx,ty)||1; tx/=L; ty/=L;
+      A.push([q[0]+ty*th/2, q[1]-tx*th/2]); B.push([q[0]-ty*th/2, q[1]+tx*th/2]); }
+    const o=[]; for(const q of A) o.push([cm(-q[0]),cm(q[1])]);
+    for(let i=n-1;i>=0;i--) o.push([cm(-B[i][0]),cm(B[i][1])]);
+    return o; };
+  const SHELL=(prof,W,mat,wf,bend,bev)=>{
+    const m=C.ext(prof, cm(W), mat, 0,0,0, 'zy', bev?cm(bev):0);
+    const g0=m.geometry; g0.computeBoundingBox();
+    const mid=(g0.boundingBox.min.z+g0.boundingBox.max.z)/2, p=g0.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const zz=-p.getX(i)/CM, yy=p.getY(i)/CM;
+      const nx=(p.getZ(i)-mid)*(wf?wf(zz,yy):1);
+      p.setZ(i,nx);
+      if(bend){ const d=bend(nx/CM,zz,yy);
+        p.setX(i, p.getX(i)-cm(d[0])); p.setY(i, p.getY(i)+cm(d[1])); }
+    }
+    // 挤出体自带的 UV 在这种曲面上会把纹理拉成竖条纹，按 (世界x, 世界y-世界z) 重投一遍
+    let ax0=1e9,ax1=-1e9,ay0=1e9,ay1=-1e9; const U=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ const u=p.getZ(i), v=p.getY(i)+p.getX(i);
+      U[i*2]=u; U[i*2+1]=v;
+      if(u<ax0)ax0=u; if(u>ax1)ax1=u; if(v<ay0)ay0=v; if(v>ay1)ay1=v; }
+    const su=1/Math.max(1e-4,ax1-ax0), sv=1/Math.max(1e-4,ay1-ay0);
+    for(let i=0;i<p.count;i++){ U[i*2]=(U[i*2]-ax0)*su; U[i*2+1]=(U[i*2+1]-ay0)*sv; }
+    g0.setAttribute('uv', new T.BufferAttribute(U,2));
+    g0.computeVertexNormals(); g0.computeBoundingBox(); m.position.set(0,0,0); return m; };
+
+  /* —— 一体壳：座面 → 腰 → 靠背，一条连续 S 曲线 —— */
+  const cl=[[22.0,44.9],[18.5,43.2],[13.0,42.5],[6.0,42.2],[-1.0,42.6],[-7.5,43.8],
+            [-12.0,45.6],[-15.0,48.6],[-16.9,52.6],[-18.1,58.0],[-18.9,64.0],
+            [-19.7,70.0],[-20.7,75.4],[-22.0,79.4],[-23.2,80.6]];
+  const wSeat=(z)=>{ const t=Math.max(0,(z-6.0)/17.0), u=Math.max(0,(-6.0-z)/13.0);
+    const tip=Math.max(0,(z-19.8)/3.6);                    // 前缘两角收成圆角
+    return Math.max(.16, 1-0.17*t*t-0.30*u*u)*Math.sqrt(Math.max(0.14,1-tip*tip)); };
+  const wBack=(y)=>{ let f=0.665+0.268*Math.min(1,Math.max(0,(y-48.0)/27.0));
+    const tp=Math.max(0,(y-77.0)/4.0); f*=Math.sqrt(Math.max(0.03,1-tp*tp)); return f; };
+  const wfO=(z,y)=>{ const t=Math.min(1,Math.max(0,(y-44.6)/4.6));
+    return wSeat(z)*(1-t)+wBack(y)*t; };
+  const bendO=(x,z,y)=>{ const t=Math.min(1,Math.max(0,(y-44.5)/4.2));
+    const e=Math.max(0,(Math.abs(x)-16.0)/6.5);
+    return [ t*1.5*Math.pow(Math.abs(x)/20,2.1), (1-t)*(-1.4*e*e) ]; };
+  SHELL(BAND(SM(cl,48),1.15), 45, bodyM, wfO, bendO, 0.30);
+
+  /* —— 座下一体裙板：两条侧梁 + 前后横梁，腿从裙板下伸出 —— */
+  for(const s of [-1,1]) bar([s*16.4,39.4,11.0],[s*16.4,39.4,-6.5],[3.2,5.4],[3.2,5.4],legM,4.0);
+  bar([-16.4,39.4,11.0],[16.4,39.4,11.0],[5.0,3.2],[5.0,3.2],legM,4.0);
+  bar([-16.4,39.4,-6.5],[16.4,39.4,-6.5],[4.6,3.2],[4.6,3.2],legM,4.0);
+  C.rb(cm(34),cm(2.0),cm(17.0),cm(0.8),bodyM,0,cm(38.4),cm(2.2),3);
+
+  /* —— 四条锥形腿 —— */
+  for(const s of [-1,1]){
+    bar([s*16.4,40.8,11.4],[s*19.0,0.8,23.2],[5.6,5.0],[2.6,2.9],legM,2.4,20);
+    bar([s*16.4,40.8,-6.8],[s*18.4,0.8,-24.4],[5.6,5.4],[2.6,2.9],legM,2.4,20);
+    for(const q of [[s*19.0,23.2],[s*18.4,-24.4]])
+      C.cyl(cm(1.35),cm(1.45),cm(0.85),glideM,cm(q[0]),0,cm(q[1]),14);
+  }
+
+  C.g.updateMatrixWorld(true);
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
+MODELS['tobias'] = (C) => {
+  const cm=C.cm, T=C.THREE, CM=cm(1);
+  /* 透明亚克力：opacity<0.8 时体检与 ensureTextured 都豁免贴图要求 */
+  const acryl=new T.MeshPhysicalMaterial({color:C.col.clone().lerp(new T.Color(0xffffff),0.45),
+    transparent:true, opacity:.22, roughness:.04, metalness:0,
+    clearcoat:1, clearcoatRoughness:.03, envMapIntensity:1.25,
+    side:T.DoubleSide, depthWrite:false});
+  const chromeM=C.M(0xd8dbe0,{rough:.085,metal:1,clear:.55,clearRough:.04,envI:1.0});
+  const glideM =C.M(0x35383d,{rough:.78,envI:.16});
+
+  const SM=(cl,n)=>{ const c=new T.CatmullRomCurve3(cl.map(q=>new T.Vector3(q[0],q[1],0)),false,'catmullrom',0.4);
+    return c.getSpacedPoints(n).map(v=>[v.x,v.y]); };
+  const BAND=(cl,th)=>{ const n=cl.length,A=[],B=[];
+    for(let i=0;i<n;i++){ const q=cl[i], a=cl[Math.max(0,i-1)], b=cl[Math.min(n-1,i+1)];
+      let tx=b[0]-a[0], ty=b[1]-a[1]; const L=Math.hypot(tx,ty)||1; tx/=L; ty/=L;
+      A.push([q[0]+ty*th/2, q[1]-tx*th/2]); B.push([q[0]-ty*th/2, q[1]+tx*th/2]); }
+    const o=[]; for(const q of A) o.push([cm(-q[0]),cm(q[1])]);
+    for(let i=n-1;i>=0;i--) o.push([cm(-B[i][0]),cm(B[i][1])]);
+    return o; };
+  const SHELL=(prof,W,mat,wf,bend,bev)=>{
+    const m=C.ext(prof, cm(W), mat, 0,0,0, 'zy', bev?cm(bev):0);
+    const g0=m.geometry; g0.computeBoundingBox();
+    const mid=(g0.boundingBox.min.z+g0.boundingBox.max.z)/2, p=g0.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const zz=-p.getX(i)/CM, yy=p.getY(i)/CM;
+      const nx=(p.getZ(i)-mid)*(wf?wf(zz,yy):1);
+      p.setZ(i,nx);
+      if(bend){ const d=bend(nx/CM,zz,yy);
+        p.setX(i, p.getX(i)-cm(d[0])); p.setY(i, p.getY(i)+cm(d[1])); }
+    }
+    // 挤出体自带的 UV 在这种曲面上会把纹理拉成竖条纹，按 (世界x, 世界y-世界z) 重投一遍
+    let ax0=1e9,ax1=-1e9,ay0=1e9,ay1=-1e9; const U=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ const u=p.getZ(i), v=p.getY(i)+p.getX(i);
+      U[i*2]=u; U[i*2+1]=v;
+      if(u<ax0)ax0=u; if(u>ax1)ax1=u; if(v<ay0)ay0=v; if(v>ay1)ay1=v; }
+    const su=1/Math.max(1e-4,ax1-ax0), sv=1/Math.max(1e-4,ay1-ay0);
+    for(let i=0;i<p.count;i++){ U[i*2]=(U[i*2]-ax0)*su; U[i*2+1]=(U[i*2+1]-ay0)*sv; }
+    g0.setAttribute('uv', new T.BufferAttribute(U,2));
+    g0.computeVertexNormals(); g0.computeBoundingBox(); m.position.set(0,0,0); return m; };
+  /* 钢管：沿 3D 路径铺短圆柱段（C.tube 的胶囊 ~500 面/段，74 段就 3.7 万面，太贵），
+     朝向靠 quaternion，不用欧拉角；段间按半径略微重叠，弯头处看不出接缝 */
+  const pipe=(pts,r,mat,n,seg)=>{
+    const c=new T.CatmullRomCurve3(pts.map(q=>new T.Vector3(cm(q[0]),cm(q[1]),cm(q[2]))),
+                                   false,'catmullrom',0.35);
+    const P=c.getPoints(n);
+    for(let i=0;i<P.length-1;i++){
+      const a=P[i], b=P[i+1];
+      const d=new T.Vector3().subVectors(b,a), L=d.length()||1e-5;
+      const m=new T.Mesh(new T.CylinderGeometry(r,r,L+r*0.62,seg||12,1), mat);
+      m.position.set((a.x+b.x)/2,(a.y+b.y)/2,(a.z+b.z)/2);
+      m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), d.multiplyScalar(1/L));
+      m.castShadow=m.receiveShadow=true; C.g.add(m);
+    }
+  };
+
+  /* —— 亚克力壳 —— */
+  const cl=[[23.6,45.4],[19.0,44.0],[13.0,43.3],[6.0,43.1],[-1.0,43.4],[-7.0,44.1],
+            [-12.0,45.7],[-15.6,48.8],[-17.9,53.0],[-19.4,58.5],[-20.4,64.5],
+            [-21.5,70.5],[-23.2,76.0],[-24.6,79.0],[-26.2,80.8],[-27.4,81.5]];
+  const wSeat=(z)=>{ const t=Math.max(0,(z-7.0)/17.0), u=Math.max(0,(-3.0-z)/13.0);
+    const tip=Math.max(0,(z-20.4)/3.8);
+    return Math.max(.18, 1-0.14*t*t-0.15*u*u)*Math.sqrt(Math.max(0.16,1-tip*tip)); };
+  const wBack=(y)=>{ let f=0.815+0.060*Math.min(1,Math.max(0,(y-50.0)/24.0));
+    const tp=Math.max(0,(y-79.4)/2.7); f*=Math.sqrt(Math.max(0.06,1-tp*tp)); return f; };
+  const wfT=(z,y)=>{ const t=Math.min(1,Math.max(0,(y-44.4)/5.0));
+    return wSeat(z)*(1-t)+wBack(y)*t; };
+  const bendT=(x,z,y)=>{ const t=Math.min(1,Math.max(0,(y-44.6)/4.4));
+    const e=Math.max(0,(Math.abs(x)-15.0)/9.0);
+    return [ t*1.7*Math.pow(Math.abs(x)/21,2.1), (1-t)*(-1.9*e*e) ]; };
+  SHELL(BAND(SM(cl,48),0.95), 48, acryl, wfT, bendT, 0.28);
+
+  /* —— 悬臂钢管：一根连续管，两端自由收在座面后下方 —— */
+  const R=cm(0.82);
+  pipe([[-22.0,42.4,-16.5],[-22.6,42.3,-6.0],[-23.3,42.2, 6.0],[-24.0,42.0,16.0],
+        [-24.9,41.2,21.0],[-25.9,38.6,24.6],[-26.5,33.5,26.2],[-26.4,25.0,26.6],
+        [-26.4,10.0,26.4],[-26.4, 4.0,24.8],[-26.4, 1.7,21.5],[-26.4, 1.6, 8.0],
+        [-26.4, 1.6,-8.0],[-26.4, 1.6,-21.5],[-25.6, 1.6,-25.6],[-22.0, 1.6,-27.0],
+        [  0.0, 1.6,-27.3],
+        [ 22.0, 1.6,-27.0],[ 25.6, 1.6,-25.6],[ 26.4, 1.6,-21.5],[ 26.4, 1.6,-8.0],
+        [ 26.4, 1.6, 8.0],[ 26.4, 1.7,21.5],[ 26.4, 4.0,24.8],[ 26.4,10.0,26.4],
+        [ 26.4,25.0,26.6],[ 26.5,33.5,26.2],[ 25.9,38.6,24.6],[ 24.9,41.2,21.0],
+        [ 24.0,42.0,16.0],[ 23.3,42.2, 6.0],[ 22.6,42.3,-6.0],[ 22.0,42.4,-16.5]],
+       R, chromeM, 68);
+
+  /* 四个脚垫 + 四颗把壳压在管上的镀铬圆柱 */
+  for(const s of [-1,1]){
+    for(const z of [24.2,-24.6]) C.cyl(cm(1.05),cm(1.25),cm(0.95),glideM,s*cm(26.4),0,cm(z),14);
+    for(const q of [[10.5,43.0],[-9.0,43.2]]){
+      C.cyl(cm(1.55),cm(1.75),cm(1.4),chromeM,s*cm(23.2),cm(q[1]-1.4),cm(q[0]),16);
+      C.cyl(cm(1.9),cm(1.9),cm(0.32),chromeM,s*cm(23.2),cm(q[1]+0.5),cm(q[0]),16);
+    }
+  }
+
+  C.g.updateMatrixWorld(true);
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
+MODELS['lisabo_ch'] = (C) => {
+  const cm=C.cm, T=C.THREE, CM=cm(1);
+  const woodM = C.M(C.col, {wood:(C.spec.wood||'birch'), rough:.42, clear:.34, clearRough:.22, envI:.55});
+  const woodD = C.M(C.col.clone().multiplyScalar(.86), {wood:(C.spec.wood||'birch'), rough:.46, clear:.26, envI:.5});
+  const boltM = C.M(0x8b9199,{rough:.28,metal:.86,envI:.85});
+  const glideM= C.M(0x3a3d42,{rough:.76,envI:.16});
+
+  const bar=(a,b,sA,sB,mat,pw,seg)=>{
+    const dx=b[0]-a[0], dy=b[1]-a[1], dz=b[2]-a[2];
+    const Lc=Math.hypot(dx,dy,dz)||1e-4, H=cm(Lc), n=seg||18, e=pw||4.2;
+    const geo=new T.CylinderGeometry(1,1,H,n,1), p=geo.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i), y=p.getY(i), z=p.getZ(i), r=Math.hypot(x,z);
+      const t=Math.min(1,Math.max(0,(y+H/2)/H));
+      const rx=cm(sA[0]+(sB[0]-sA[0])*t)/2, rz=cm(sA[1]+(sB[1]-sA[1])*t)/2;
+      if(r>1e-9){ const ca=Math.abs(x/r), sa=Math.abs(z/r);
+        const k=1/Math.pow(Math.pow(ca,e)+Math.pow(sa,e),1/e);
+        p.setX(i,x/r*k*rx); p.setZ(i,z/r*k*rz); }
+    }
+    geo.computeVertexNormals();
+    const m=new T.Mesh(geo,mat);
+    m.position.set(cm((a[0]+b[0])/2), cm((a[1]+b[1])/2), cm((a[2]+b[2])/2));
+    m.quaternion.setFromUnitVectors(new T.Vector3(0,1,0), new T.Vector3(dx/Lc,dy/Lc,dz/Lc));
+    m.castShadow=m.receiveShadow=true; C.g.add(m); return m; };
+  const SM=(cl,n)=>{ const c=new T.CatmullRomCurve3(cl.map(q=>new T.Vector3(q[0],q[1],0)),false,'catmullrom',0.4);
+    return c.getSpacedPoints(n).map(v=>[v.x,v.y]); };
+  const BAND=(cl,th)=>{ const n=cl.length,A=[],B=[];
+    for(let i=0;i<n;i++){ const q=cl[i], a=cl[Math.max(0,i-1)], b=cl[Math.min(n-1,i+1)];
+      let tx=b[0]-a[0], ty=b[1]-a[1]; const L=Math.hypot(tx,ty)||1; tx/=L; ty/=L;
+      A.push([q[0]+ty*th/2, q[1]-tx*th/2]); B.push([q[0]-ty*th/2, q[1]+tx*th/2]); }
+    const o=[]; for(const q of A) o.push([cm(-q[0]),cm(q[1])]);
+    for(let i=n-1;i>=0;i--) o.push([cm(-B[i][0]),cm(B[i][1])]);
+    return o; };
+  const SHELL=(prof,W,mat,wf,bend,bev)=>{
+    const m=C.ext(prof, cm(W), mat, 0,0,0, 'zy', bev?cm(bev):0);
+    const g0=m.geometry; g0.computeBoundingBox();
+    const mid=(g0.boundingBox.min.z+g0.boundingBox.max.z)/2, p=g0.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const zz=-p.getX(i)/CM, yy=p.getY(i)/CM;
+      const nx=(p.getZ(i)-mid)*(wf?wf(zz,yy):1);
+      p.setZ(i,nx);
+      if(bend){ const d=bend(nx/CM,zz,yy);
+        p.setX(i, p.getX(i)-cm(d[0])); p.setY(i, p.getY(i)+cm(d[1])); }
+    }
+    // 挤出体自带的 UV 在这种曲面上会把纹理拉成竖条纹，按 (世界x, 世界y-世界z) 重投一遍
+    let ax0=1e9,ax1=-1e9,ay0=1e9,ay1=-1e9; const U=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ const u=p.getZ(i), v=p.getY(i)+p.getX(i);
+      U[i*2]=u; U[i*2+1]=v;
+      if(u<ax0)ax0=u; if(u>ax1)ax1=u; if(v<ay0)ay0=v; if(v>ay1)ay1=v; }
+    const rp=(mat.map&&mat.map.repeat)||{x:1,y:1};   // 整块正好一张贴图：木纹不跨接缝
+    const su=1/Math.max(1e-4,(ax1-ax0)*rp.x), sv=1/Math.max(1e-4,(ay1-ay0)*rp.y);
+    for(let i=0;i<p.count;i++){ U[i*2]=(U[i*2]-ax0)*su; U[i*2+1]=(U[i*2+1]-ay0)*sv; }
+    g0.setAttribute('uv', new T.BufferAttribute(U,2));
+    g0.computeVertexNormals(); g0.computeBoundingBox(); m.position.set(0,0,0); return m; };
+  const RR=(w,d,r,n)=>{ const o=[], q=[[w/2-r,d/2-r],[-(w/2-r),d/2-r],[-(w/2-r),-(d/2-r)],[w/2-r,-(d/2-r)]];
+    for(let k=0;k<4;k++) for(let i=0;i<=n;i++){ const a=k*Math.PI/2+i/n*Math.PI/2;
+      o.push([q[k][0]+r*Math.cos(a), q[k][1]+r*Math.sin(a)]); }
+    return o; };
+
+  /* —— 前腿（细圆锥，向前外撇）+ 后腿（扁方立柱，座面处折一下通到靠背顶）—— */
+  for(const s of [-1,1]){
+    bar([s*17.8,44.0,13.0],[s*21.5,0.7,22.6],[5.0,5.0],[2.6,2.6],woodM,2.2,20);
+    bar([s*20.4,0.7,-23.6],[s*18.5,45.5,-16.8],[3.2,4.8],[3.6,5.6],woodM,5.0,18);
+    bar([s*18.4,43.0,-17.0],[s*15.6,79.3,-20.0],[3.6,5.6],[2.5,4.3],woodM,5.0,18);
+    for(const q of [[s*21.5,22.6],[s*20.4,-23.6]])
+      C.cyl(cm(1.30),cm(1.45),cm(0.9),glideM,cm(q[0]),0,cm(q[1]),14);
+  }
+
+  /* —— 座板：实木拼板，圆角方形，前缘略下垂、中间微凹 —— */
+  const seatTop=45.2, seatTh=2.0, bev=0.36;
+  const st=C.ext(RR(44,39,5.5,6).map(p=>[cm(p[0]),cm(p[1]-1.5)]), cm(seatTh), woodM,
+                 0, cm(seatTop-bev), 0, 'xz', cm(bev));
+  {
+    const p=st.geometry.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const x=p.getX(i)/CM, z=p.getY(i)/CM;
+      const ef=Math.max(0,(z-11.0)/8.0), ex=Math.max(0,(Math.abs(x)-15.0)/7.0);
+      let dp = 1.3*ef*ef + 0.5*ex*ex;
+      dp += 0.5*Math.max(0, 1-(x*x/300 + (z+2)*(z+2)/260));
+      p.setZ(i, p.getZ(i)+cm(dp));
+    }
+    const rp=(woodM.map&&woodM.map.repeat)||{x:1,y:1};
+    let a0=1e9,a1=-1e9,b0=1e9,b1=-1e9; const U=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){ const u=p.getX(i), v=p.getY(i);
+      U[i*2]=u; U[i*2+1]=v;
+      if(u<a0)a0=u; if(u>a1)a1=u; if(v<b0)b0=v; if(v>b1)b1=v; }
+    const su=1/Math.max(1e-4,(a1-a0)*rp.x), sv=1/Math.max(1e-4,(b1-b0)*rp.y);
+    for(let i=0;i<p.count;i++){ U[i*2]=(U[i*2]-a0)*su; U[i*2+1]=(U[i*2+1]-b0)*sv; }
+    st.geometry.setAttribute('uv', new T.BufferAttribute(U,2));
+    st.geometry.computeVertexNormals(); st.geometry.computeBoundingBox();
+  }
+  for(const x of [-6.5,6.5]) C.box(cm(0.3),cm(0.18),cm(35),woodD,cm(x),cm(seatTop-0.18),cm(-1.5));
+
+  /* —— 座下侧枨 + 前枨 + 后挡板 —— */
+  for(const s of [-1,1]) bar([s*18.0,38.4,11.0],[s*18.6,38.4,-14.2],[2.4,3.8],[2.4,3.8],woodM,5.0);
+  bar([-17.5,38.4,-14.6],[17.5,38.4,-14.6],[3.8,2.4],[3.8,2.4],woodM,5.0);
+  bar([-17.2,38.9,12.0],[17.2,38.9,12.0],[3.4,2.2],[3.4,2.2],woodM,5.0);
+  C.rb(cm(26),cm(4.4),cm(2.0),cm(0.7),woodD,0,cm(37.6),cm(-10.5),3);
+
+  /* —— 靠背板：弯曲木板，上下角都是圆角，装在后腿前面 —— */
+  const bcl=[[-16.5,64.2],[-16.9,68.0],[-17.4,72.0],[-18.0,76.0],[-18.7,79.2]];
+  const wfB=(z,y)=>{
+    let f=1;
+    const t=Math.max(0,(y-76.4)/3.9); f*=Math.sqrt(Math.max(0.07,1-t*t));
+    const b=Math.max(0,(66.6-y)/2.9); f*=Math.sqrt(Math.max(0.10,1-0.86*b*b));
+    return f; };
+  SHELL(BAND(SM(bcl,26),1.5), 40, woodM, wfB,
+        (x)=>[1.7*Math.pow(Math.abs(x)/20,2.0), 0], 0.32);
+
+  /* 靠背螺丝：每边两颗 */
+  for(const s of [-1,1]) for(const q of [[69.0,-17.6],[74.5,-18.4]])
+    C.cyl(cm(0.55),cm(0.55),cm(0.3),boltM,s*cm(15.8),cm(q[0]),cm(q[1]+0.95),12);
+
+  C.g.updateMatrixWorld(true);
+  const bb=new T.Box3().setFromObject(C.g), off=new T.Vector3(); bb.getCenter(off);
+  for(const ch of C.g.children){ ch.position.x-=off.x; ch.position.z-=off.z; }
+};
+
 /* ===== 性能：按材质合并 mesh，大幅减少 draw call（几何逐顶点保留，外观完全不变） ===== */
 function _concatGeos(list){
   let total=0;
@@ -5941,7 +6924,11 @@ function modelCtx(g, spec, col, col2, matlib, it){
     bar(len,r,mat,x,y,z,axis){ C.tube(len,r,mat,x,y,z,axis||'x');
       const ax=(axis||'x')==='x'?[1,0,0]:[0,0,1];
       for(const s2 of [-1,1]) C.tube(r*3.4,r*0.75,mat, (x||0)+ax[0]*s2*(len/2-r*1.4), (y||0)-r*1.7, (z||0)+ax[2]*s2*(len/2-r*1.4),'y'); },
-    caster(r,mat,x,z){ const w=new THREE.Mesh(new THREE.TorusGeometry(r,r*0.42,8,16),mat);
+    /* 脚轮：r = 轮子外半径（外沿正好切地）。
+       原版拿 TorusGeometry(r, r*0.42) 放在 y=r，外半径其实是 1.42r，
+       整个轮子会沉到地板下 0.42r——「所有部件贴地」那条断言必挂。 */
+    caster(r,mat,x,z){ const t=r*0.30;
+      const w=new THREE.Mesh(new THREE.TorusGeometry(Math.max(r-t,r*0.2),t,8,16),mat);
       w.rotation.y=Math.PI/2; w.position.set(x,r,z); w.castShadow=true; g.add(w);
       C.cyl(r*0.3,r*0.3,r*1.2,mat,x,r*0.9,z,10); },
     /* 网格阵列辅助 */
@@ -7684,6 +8671,44 @@ async function run3DTest(){
       const g=furn3D({uid:-12,ref:hw.id,x:0,y:0,rot:0}, hw);
       let n=0; g.traverse(o=>{ if(o.isLight) n++; }); disposeOwned(g); return n===2;
     })(), '上下双向发光');
+
+    /* ===== v3.6：9 件座椅重做（原来全在吃 kind 通用回退，只有 120 面） ===== */
+    const SEATING = ['teodores','odger','tobias','lisabo_ch',
+                     'bergmund_bar','skogsta_st','franklin','flintan','markus'];
+    const seatBad = [], seatInfo = [];
+    for(const id of SEATING){
+      const sp = CATALOG.find(c=>c.id===id);
+      if(!sp){ seatBad.push(id+':条目没了'); continue; }
+      if(!sp.model){ seatBad.push(id+':没有专属模型'); continue; }
+      if(sp.seatH == null){ seatBad.push(id+':缺 seatH'); continue; }
+      const g = furn3D({uid:-30, ref:sp.id, x:0, y:0, rot:0}, sp);
+      g.updateMatrixWorld(true);
+      const b = new THREE.Box3().setFromObject(g);
+      const sz = new THREE.Vector3(), ct = new THREE.Vector3();
+      b.getSize(sz); b.getCenter(ct);
+      let tri = 0;
+      g.traverse(o=>{ if(o.isMesh && o.geometry && o.geometry.attributes.position)
+        tri += o.geometry.attributes.position.count/3; });
+      const fx = sz.x/cm2ft(sp.w), fz = sz.z/cm2ft(sp.d), fy = sz.y/cm2ft(sp.h);
+      const bad = [];
+      if(tri < 2000) bad.push('面数 '+Math.round(tri));                 // 通用回退是 120 面
+      if(fx<0.92||fx>1.02||fz<0.92||fz>1.02||fy<0.92||fy>1.02)
+        bad.push('填充率 '+[fx,fz,fy].map(v=>(v*100).toFixed(0)).join('/'));
+      if(Math.abs(ct.x)>0.03 || Math.abs(ct.z)>0.03) bad.push('重心偏');
+      if(b.min.y < -0.02) bad.push('沉地板 '+b.min.y.toFixed(3));
+      disposeOwned(g);
+      if(bad.length) seatBad.push(id+':'+bad.join('/'));
+      else seatInfo.push(id+' '+Math.round(tri));
+    }
+    T('seating-remodeled', seatBad.length===0,
+      seatBad.length ? seatBad.join(' | ') : seatInfo.join(' · '));
+    T('seating-all-have-seatH', SEATING.every(id=>{
+      const sp=CATALOG.find(c=>c.id===id); return sp && sp.seatH!=null; }),
+      '9 件座椅都补了座高');
+    // 新贴图：种子不能撞（撞了两张图会一模一样）
+    T('new-textures-registered', typeof speckleTexture==='function' && typeof meshWeaveTexture==='function'
+      && speckleTexture() !== meshWeaveTexture(),
+      '再生木纤维 / 网布 两张新贴图各自独立');
 
     /* ===== 目录缩略图（v3.1） ===== */
     const sample=['billy','pg_qriser','pg_chestnut','saltsjobaden-0','raskog-0','cl-flush','wk-mat-s-0','storklinta6'];
