@@ -200,7 +200,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.4</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.5</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -3082,8 +3082,17 @@ function buildStatic3D(){
    每帧抖动相机子像素(抗锯齿) + 在锥内抖动太阳方向(面光源软阴影)
    + 抖动天光方向(近似环境遮蔽/漫反射)，多帧平均得到收敛画面
    ===================================================================== */
-function showPhotoResult(cv){
+function showPhotoResult(cv, info){
   const box=$('#photoOut'); box.innerHTML='';
+  if(info){
+    const cap=document.createElement('div');
+    cap.style.cssText='margin-bottom:8px;font-size:12px;color:'+(info.lost?'#ffb454':'#8b929b');
+    cap.textContent = info.lost
+      ? `⚠ 显卡上下文被重置，只完成 ${info.spp}/${info.want} 次采样（用时 ${info.secs.toFixed(0)}s）`
+        + ' —— 画面会偏噪，建议降一档质量重跑'
+      : `${info.spp} 次采样 · 用时 ${info.secs.toFixed(0)}s`;
+    box.appendChild(cap);
+  }
   const img=new Image(); img.src=cv.toDataURL('image/png');
   img.style.cssText='max-width:100%;max-height:calc(100vh - 120px);box-shadow:0 10px 40px rgba(0,0,0,.6);border-radius:4px';
   box.appendChild(img);
@@ -3762,7 +3771,10 @@ void main(){
       T /= pq;
     }
   }
-  L = min(L, vec3(uClamp));                      // 钳掉萤火虫
+  // NaN 会被加法混合永久累进累积缓冲，那个像素从此变成一个亮点，再多采样也洗不掉。
+  // 必须在写出前挡掉——min/clamp 碰到 NaN 的行为是未定义的，挡不住。
+  L = mix(vec3(0.0), L, vec3(equal(L, L)));
+  L = min(max(L, vec3(0.0)), vec3(uClamp));      // 钳掉萤火虫
   outColor = vec4(L, 1.0);
 }
 `;
@@ -3927,11 +3939,51 @@ function ptRender(samples, ptOpts){
     renderer.setRenderTarget(accRT); renderer.setClearColor(0x000000,1); renderer.clear(true,true,true);
     renderer.setRenderTarget(null);
 
-    const NT = 16, TX = 4;                     // 4x4 分块
+    /* 分块要细。单个 draw 太长会踩到 GPU 看门狗：驱动重置上下文，
+       累积缓冲被清空但采样计数还在涨，最后除以完整 spp 就得到一张欠曝多噪的图——
+       用户看到的现象是「进度卡在 40% 很久，然后突然结束，图像像只跑了一半」。 */
+    const TX = 8, NT = TX*TX;                  // 8x8 分块
     let spp = 0, tile = 0, tilesDone = 0;
     const totalTiles = samples*NT;
     const t0 = performance.now();
     let lastPreview = 0;
+
+    /* GPU 栅栏：renderer.render() 只是把命令排进队列就立刻返回。
+       不等 GPU 真画完就接着排，队列越堆越深，最后卡在某次提交上不动——
+       进度条也就跟着假死。用 fenceSync 把节奏交给 GPU，进度从此反映真实完成量。 */
+    const gl = renderer.getContext();
+    let fence = null, gpuMs = 0, perTile = 0, batchTiles = 8, waitStart = 0, polls = 0;
+    const FENCE_MAX_POLL = 120;                // 兜底：等太久就放行，绝不允许卡死
+    let useFence = !!gl.fenceSync, fenceMiss = 0;
+    const fencePut = ()=>{
+      if(useFence){ fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+                    waitStart = performance.now(); polls = 0; }
+      gl.flush();
+    };
+    const fenceDrop = ()=>{ if(fence){ try{ gl.deleteSync(fence); }catch(_){} fence = null; } };
+    const fenceReady = ()=>{
+      if(!fence) return true;                  // 不支持 fenceSync 就不节流
+      // 首次轮询带 FLUSH bit，保证这个 fence 一定会被推进去执行
+      const r = gl.clientWaitSync(fence, polls === 0 ? gl.SYNC_FLUSH_COMMANDS_BIT : 0, 0);
+      polls++;
+      if(r === gl.ALREADY_SIGNALED || r === gl.CONDITION_SATISFIED){
+        const dt = performance.now() - waitStart;
+        if(dt > 0) gpuMs = dt;                 // 计时器被冻结时（headless 虚拟时间）保留上次的值
+        fenceMiss = 0; fenceDrop(); return true;
+      }
+      if(r === gl.WAIT_FAILED || polls > FENCE_MAX_POLL){
+        // 这个平台上 fence 不好使（swiftshader 就不 signal）。连着几次都等不到就干脆别用，
+        // 否则每步白等上百次轮询，比不节流还慢。
+        if(++fenceMiss >= 3){ useFence = false; }
+        fenceDrop(); return true;
+      }
+      return false;
+    };
+
+    // 上下文丢失不能装作没事继续跑，否则最后交出来的是半成品还不告诉用户
+    let ctxLost = false;
+    const onCtxLost = (e)=>{ e.preventDefault(); ctxLost = true; };
+    canvas.addEventListener('webglcontextlost', onCtxLost, false);
 
     const denoise = (iters)=>{
       dmMat.uniforms.uN.value = Math.max(1, spp);
@@ -3953,6 +4005,8 @@ function ptRender(samples, ptOpts){
     };
 
     const finish = (aborted)=>{
+      canvas.removeEventListener('webglcontextlost', onCtxLost, false);
+      fenceDrop();
       renderer.setRenderTarget(null); renderer.setScissorTest(false);
       renderer.autoClear = savedAC;
       let out = null;
@@ -3972,11 +4026,31 @@ function ptRender(samples, ptOpts){
       requestShadowUpdate(); requestRender();
       three.ptResult = out;
       if(ptOpts.onDone) ptOpts.onDone(out, spp);
-      else if(out) showPhotoResult(out);
+      else if(out) showPhotoResult(out, {spp, want:samples, lost:ctxLost,
+                                         secs:(performance.now()-t0)/1000});
+      if(ctxLost && !ptOpts.onDone)
+        alert('显卡上下文在渲染过程中被重置了（多半是单帧太重，触发了驱动看门狗）。\n'
+            + '已用 ' + spp + '/' + samples + ' 次采样出图，画面会偏噪。\n'
+            + '建议把光追质量降一档，或把窗口调小一些再试。');
     };
 
     const step = ()=>{
       if(cancelled){ finish(true); return; }
+      if(ctxLost){ finish(false); return; }        // 上下文没了：拿现有采样收工并告知
+      if(!fenceReady()){                           // 上一批 GPU 还没画完就别再排新的
+        const el0 = ((performance.now()-t0)/1000).toFixed(1);
+        lbl.textContent = '光线追踪 '+(tilesDone/totalTiles*100).toFixed(1)+'%（'+spp+'/'+samples
+          +' spp · 已用 '+el0+'s · 等待 GPU…）';
+        setTimeout(step, 8); return;
+      }
+      // 按实测单块耗时调批量，目标一批 ~40ms：太小调度开销大，太大踩看门狗。
+      // 量不到（不支持 fence / 计时器被冻结）就保持默认批量，别退化成一次一块。
+      if(useFence && gpuMs > 0){
+        perTile = gpuMs / Math.max(1, batchTiles);
+        batchTiles = Math.max(1, Math.min(NT, Math.round(40 / Math.max(perTile, 0.5))));
+      } else if(!useFence){
+        batchTiles = NT;                       // 无栅栏可用：退回按帧排一整轮
+      }
       const fs = performance.now();
       quad.material = ptMat;
       renderer.autoClear = false;
@@ -3995,9 +4069,9 @@ function ptRender(samples, ptOpts){
         renderer.setRenderTarget(null);
         tile++; tilesDone++; batch++;
         if(tile >= NT){ tile = 0; spp++; }
-        // 每帧最多排一整轮：GPU 是异步的，CPU 光按耗时判断会把命令队列排爆、界面失去响应
-      } while(batch < NT && spp < samples && performance.now()-fs < 45);
+      } while(batch < batchTiles && spp < samples);
       renderer.autoClear = savedAC;
+      fencePut();                                  // 插栅栏，下一轮要等它完成
 
       const now = performance.now();
       if(spp > 0 && (now-lastPreview > 700 || spp >= samples)){ present(3); lastPreview = now; }
@@ -4008,7 +4082,7 @@ function ptRender(samples, ptOpts){
       const fmt = (v)=> v>=60 ? Math.floor(v/60)+'分'+String(Math.round(v%60)).padStart(2,'0')+'秒' : v.toFixed(0)+'秒';
       lbl.textContent = '光线追踪 '+(frac*100).toFixed(1)+'%（'+spp+'/'+samples+' spp · 已用 '+fmt(el)+
         (eta>1?' · 约剩 '+fmt(eta):'')+' · '+PT.nTri.toLocaleString()+' 三角形 / '+PT.nLight+' 光源'+
-        (denoiseOn?' · 降噪开':'')+'）';
+        (denoiseOn?' · 降噪开':'')+(perTile>0?' · '+perTile.toFixed(0)+'ms/块':'')+'）';
       if(spp >= samples){ finish(false); return; }
       setTimeout(step, 0);
     };
