@@ -5913,290 +5913,99 @@ drawFurniture = function(){ _origDraw(); if(three && state.view==='3d') sync3D()
 </script>
 
 <script>
-window.__ERRS=[];
-window.addEventListener('error', e=>window.__ERRS.push(e.message+' :'+e.lineno));
-window.addEventListener('load', ()=>{ setTimeout(runWETest, 300); });
-async function runWETest(){
+window.__EPT=[];
+window.addEventListener('error', e=>window.__EPT.push(e.message+' :'+e.lineno));
+const _ce=console.error; console.error=function(){ window.__EPT.push('console.error: '+[].slice.call(arguments).join(' ').slice(0,600)); _ce.apply(console,arguments); };
+const _cw=console.warn;  console.warn =function(){ const m=[].slice.call(arguments).join(' '); if(/shader|GLSL|program|compil/i.test(m)) window.__EPT.push('console.warn: '+m.slice(0,600)); _cw.apply(console,arguments); };
+window.addEventListener('load', ()=>{ setTimeout(runPT, 500); });
+async function runPT(){
   const log=[];
-  const T=(name,ok,extra)=>log.push((ok?'PASS':'FAIL')+' '+name+(extra!==undefined?' | '+extra:''));
-  const tick=()=>new Promise(r=>setTimeout(r,60));
-  const origCap=Element.prototype.setPointerCapture;
-  Element.prototype.setPointerCapture=function(id){ try{ origCap.call(this,id); }catch(e){} };
-  const svgEl=document.querySelector('#svg2d');
-  const SPT=(fx,fy)=>{ const ctm=svgEl.getScreenCTM(); const p=new DOMPoint(fx*S, fy*S).matrixTransform(ctm); return [p.x,p.y]; };
-  const fire=(type,cx,cy,extra)=>{ const tgt=document.elementFromPoint(cx,cy)||svgEl;
-    tgt.dispatchEvent(new PointerEvent(type,Object.assign({clientX:cx,clientY:cy,bubbles:true,cancelable:true,pointerId:1,isPrimary:true,button:0,buttons:1},extra||{})));
-    return tgt; };
-  const key=(k,tgt,sh)=>((tgt||document.body).dispatchEvent(new KeyboardEvent('keydown',{key:k,bubbles:true,cancelable:true,shiftKey:!!sh})));
+  const T=(n,ok,x)=>log.push((ok?'PASS':'FAIL')+' '+n+(x!==undefined?' | '+x:''));
+  const wait=(ms)=>new Promise(r=>setTimeout(r,ms||150));
   try{
-    document.querySelector('#btnWallEdit').click(); await tick();
-    T('edit-mode-on', wallEdit.on===true);
-    T('sidebar-disabled', document.body.classList.contains('wall-editing'));
-    const [hx,hy]=SPT(260/11.2,147.4/11.2);
-    fire('pointermove',hx,hy,{buttons:0}); await tick();
-    T('hover-highlight', wallEdit.hoverSel!=null);
-    // 点击选中（含 1px 抖动，不应产生 override）
-    fire('pointerdown',hx,hy); await tick();
-    fire('pointermove',hx+1,hy+1); await tick();
-    fire('pointerup',hx+1,hy+1); await tick();
-    T('select-wall', wallEdit.sel!=null && wallEdit.sel.kind==='w');
-    T('jitter-click-no-override', Object.keys(USERGEO.ovW).length===0, 'ovW='+Object.keys(USERGEO.ovW).length);
-    T('sel-band+label', !!document.querySelector('#wedit polygon[fill="rgba(38,224,168,0.35)"]') && !!document.querySelector('#wedit text'));
-    // 拖整段 >5px → 产生 override；Esc 中途回滚
-    fire('pointerdown',hx,hy); await tick();
-    fire('pointermove',hx+40,hy+3); await tick(); await tick();
-    key('Escape'); await tick();
-    const selI=wallEdit.sel?wallEdit.sel.i:0;
-    const ov0=USERGEO.ovW[selI];
-    T('esc-during-drag-rollback', !ov0 || (Math.abs(ov0.x1-WALLS[selI].x1)<1e-6&&Math.abs(ov0.y1-WALLS[selI].y1)<1e-6), JSON.stringify(ov0));
-    fire('pointerup',hx+40,hy+3); await tick();
-    USERGEO.ovW={}; USERGEO.hiddenW=[]; wallEdit.sel=null; geoChanged(); await tick();
-    // 拖端点仍工作
-    fire('pointerdown',hx,hy); await tick(); fire('pointerup',hx,hy); await tick();
-    const h=document.querySelector('.wEnd');
-    let epOK=false;
-    if(h){ const r=h.getBoundingClientRect(); const cx=r.x+3, cy=r.y+3;
-      fire('pointerdown',cx,cy); await tick();
-      fire('pointermove',cx+30,cy+2); await tick(); await tick();
-      fire('pointerup',cx+30,cy+2); await tick();
-      epOK=Object.keys(USERGEO.ovW).length>0; }
-    T('drag-endpoint', epOK);
-    USERGEO.ovW={}; wallEdit.sel=null; geoChanged(); await tick();
-    // 先选中一个门洞（类型粘滞源），再切画墙 → 类型应复位 'w'
-    wallEdit.sel={kind:'w',src:'b',i:WALLS.findIndex(w=>w.t==='d')}; updateWallBarFromSel();
-    document.querySelector('#wtoolSeg button[data-t="wall"]').click(); await tick();
-    T('type-reset-on-draw-tool', document.querySelector('#wType').value==='w', document.querySelector('#wType').value);
-    // 画墙: 右键不加点
-    const n0=USERGEO.walls.length;
-    const [ax,ay]=SPT(20,26), [bx,by]=SPT(24,26);
-    fire('pointerdown',ax,ay,{button:2,buttons:2}); await tick();
-    T('rightclick-no-point', wallEdit.drawPts.length===0, wallEdit.drawPts.length);
-    fire('pointerup',ax,ay,{button:2,buttons:0}); await tick();
-    // 左键两点 + Backspace 撤销一点 + 再点 + 焦点按钮回车
-    fire('pointerdown',ax,ay); await tick(); fire('pointerup',ax,ay); await tick();
-    fire('pointerdown',bx,by); await tick(); fire('pointerup',bx,by); await tick();
-    key('Backspace'); await tick();
-    T('backspace-pops-point', wallEdit.drawPts.length===1, wallEdit.drawPts.length);
-    fire('pointerdown',bx,by); await tick(); fire('pointerup',bx,by); await tick();
-    const btnWall=document.querySelector('#wtoolSeg button[data-t="wall"]');
-    btnWall.focus(); key('Enter', btnWall); await tick();
-    T('enter-commits-focus-button', USERGEO.walls.length>n0, 'walls='+USERGEO.walls.length);
-    T('new-wall-type-w', USERGEO.walls.length && USERGEO.walls[USERGEO.walls.length-1].t==='w');
-    // 画柱闭合
-    document.querySelector('#wtoolSeg button[data-t="poly"]').click(); await tick();
-    const p0n=USERGEO.polys.length;
-    for(const [fx,fy] of [[30,30],[33,30],[33,33],[30,33]]){ const [qx,qy]=SPT(fx,fy);
-      fire('pointerdown',qx,qy); await tick(); fire('pointerup',qx,qy); await tick(); }
-    const [q0x,q0y]=SPT(30,30);
-    fire('pointerdown',q0x,q0y); await tick(); fire('pointerup',q0x,q0y); await tick();
-    T('poly-close', USERGEO.polys.length>p0n);
-    // 3D 静态组重建（fog 应挂在真 Scene 上）
-    setView('3d'); await tick(); await tick();
-    T('3d-fog-doll-none', !!three && !three.scene.fog, '娃娃屋应无雾');
-    setCamMode('fp'); await tick();
-    T('3d-fog-fp-on', !!(three && three.scene.fog) && !!(three.scene.background&&three.scene.background.isTexture), '室内应有雾+全景');
-    setCamMode('doll'); await tick();
-    T('3d-staticGroup', !!(three && three.staticGroup && three.staticGroup.children.length>50), three?three.staticGroup.children.length:'-');
-    const g1=three.staticGroup;
-    setView('2d'); await tick();
-    USERGEO.walls.push({x1:21,y1:31,x2:23,y2:31,t:'w',wd:8}); geoChanged(); await tick();
-    setView('3d'); await tick(); await tick();
-    T('3d-rebuild-on-dirty', three.staticGroup!==g1);
+    try{ localStorage.removeItem('planner_v1'); }catch(e){}
+    state.items=[]; save=()=>{};
+    const arm=CATALOG.find(c=>c.model==='saltsjobaden');
+    state.items.push({uid:uidSeq++, ref:arm.id, x:22, y:26, rot:0});
+    const cl=CATALOG.find(c=>c.id==='cl-flush');
+    state.items.push({uid:uidSeq++, ref:cl.id, x:22, y:24, rot:0});
+    refresh(); setView('3d'); await wait(3200);
+    setCamMode('fp'); await wait(600);
+    three.cam.position.set(22, EYE_H, 31); fpYaw=Math.PI; fpPitch=-0.05;
+    if(typeof applyFP==='function') applyFP();
+    await wait(300);
 
-    // ===== 门系统 =====
-    setView('2d'); await tick();
-    document.querySelector('#btnWallEdit').classList.contains('on')||document.querySelector('#btnWallEdit').click(); await tick();
-    document.querySelector('#wtoolSeg button[data-t="door"]').click(); await tick();
-    const nd0=USERGEO.doors.length;
-    const [ddx,ddy]=SPT(452/11.2,137.4/11.2);   // 走廊门洞（已有内置门）
-    fire('pointerdown',ddx,ddy); await tick(); fire('pointerup',ddx,ddy); await tick();
-    T('door-tool-selects-existing', !!(wallEdit.sel&&wallEdit.sel.kind==='door') && USERGEO.doors.length===nd0, JSON.stringify(wallEdit.sel));
-    const dBefore=JSON.stringify(selDoor());
-    document.querySelector('#dKind').click(); await tick();
-    T('door-kind-toggle', selDoor().kind==='double', selDoor().kind);
-    document.querySelector('#dSide').click(); await tick();
-    T('door-mutations-persist', JSON.stringify(selDoor())!==dBefore && Object.keys(USERGEO.ovD).length>0, 'ovD='+Object.keys(USERGEO.ovD).length);
-    USERGEO.ovD={}; wallEdit.sel=null; geoChanged(); await tick();
-    // 画一段门洞再加门
-    document.querySelector('#wtoolSeg button[data-t="wall"]').click(); await tick();
-    document.querySelector('#wType').value='d';
-    const [w1x,w1y]=SPT(20,31),[w2x,w2y]=SPT(23,31);
-    fire('pointerdown',w1x,w1y); await tick(); fire('pointerup',w1x,w1y); await tick();
-    fire('pointerdown',w2x,w2y); await tick(); fire('pointerup',w2x,w2y); await tick();
-    key('Enter'); await tick();
-    document.querySelector('#wtoolSeg button[data-t="door"]').click(); await tick();
-    const [wmx,wmy]=SPT(21.5,31);
-    fire('pointerdown',wmx,wmy); await tick(); fire('pointerup',wmx,wmy); await tick();
-    T('door-added-on-user-opening', USERGEO.doors.length===nd0+1, USERGEO.doors.length);
-    // 2D 符号存在
-    T('2d-door-symbols', document.querySelectorAll('#root path[stroke-dasharray="3 3"]').length>=8,
-      document.querySelectorAll('#root path[stroke-dasharray="3 3"]').length+' arcs');
-    // 3D 门板计数
-    setView('3d'); await tick(); await tick();
-    let wD=0, woodD=0, wVerts=0, woodVerts=0;
-    three.staticGroup.traverse(o=>{ if(o.isMesh&&o.material&&o.material.color){
-      const c=o.material.color.getHex(), n=o.geometry.attributes.position.count;
-      if(c===0xe8e5e0){ wD++; wVerts+=n; } else if(c===0x7a4f2e){ woodD++; woodVerts+=n; } }});
-    // 几何按材质合并后 mesh 数会变（这是优化的目的），改用顶点数断言门扇确实存在
-    T('3d-white-doors', wVerts>3000, wD+' mesh / '+wVerts+' verts');
-    T('3d-wood-entry-door', woodVerts>200, woodD+' mesh / '+woodVerts+' verts');
-    setView('2d'); await tick();
+    /* ---- 1. 场景收集 ---- */
+    const t0=performance.now();
+    const S=ptCollect();
+    const tCollect=performance.now()-t0;
+    T('pt-collect-tris', !!S && S.nTri>10000, S? (S.nTri.toLocaleString()+' 三角形 · '+S.mats.length+' 材质 · '+S.maps.length+' 贴图 · '+Math.round(tCollect)+'ms') : 'null');
+    let finite=true;
+    for(let i=0;i<S.P.length;i+=997){ if(!isFinite(S.P[i])) { finite=false; break; } }
+    T('pt-collect-finite', finite);
 
-    // ===== 门编辑（滑动/调宽/联动/回滚）=====
-    setView('2d'); await tick();
-    document.querySelector('#wtoolSeg button[data-t="select"]').click(); await tick();
-    const ppf=(svgEl.getScreenCTM().a)*S;
-    const [dhx,dhy]=SPT(452/11.2,137.4/11.2);
-    fire('pointerdown',dhx,dhy); await tick(); fire('pointerup',dhx,dhy); await tick();
-    T('door-select-via-click', !!(wallEdit.sel&&wallEdit.sel.kind==='door'), JSON.stringify(wallEdit.sel));
-    fire('pointerdown',dhx,dhy); await tick();
-    fire('pointermove',dhx+ppf,dhy); await tick(); await tick();
-    fire('pointerup',dhx+ppf,dhy); await tick();
-    const mv=USERGEO.ovD[3];
-    T('door-slide-ovD', !!mv && Math.abs(mv.x1-(DOORS[3].x1+1))<0.35, mv?('x1 '+mv.x1.toFixed(2)+' vs '+(DOORS[3].x1+1).toFixed(2)):'-');
-    T('door-slide-linkage', Object.keys(USERGEO.ovW).length>=2, 'ovW='+Object.keys(USERGEO.ovW).length);
-    fire('pointerdown',dhx+ppf,dhy); await tick();
-    fire('pointermove',dhx+2*ppf,dhy); await tick(); await tick();
-    key('Escape'); await tick();
-    fire('pointerup',dhx+2*ppf,dhy); await tick();
-    T('door-esc-rollback', !!USERGEO.ovD[3] && Math.abs(USERGEO.ovD[3].x1-(DOORS[3].x1+1))<0.35, USERGEO.ovD[3]?USERGEO.ovD[3].x1.toFixed(2):'-');
-    // 拖端点调宽
-    fire('pointerdown',dhx+ppf,dhy); await tick(); fire('pointerup',dhx+ppf,dhy); await tick();
-    const eh=document.querySelectorAll('.dEnd')[1];
-    if(eh){ const r=eh.getBoundingClientRect(); const cx=r.x+r.width/2, cy=r.y+r.height/2;
-      fire('pointerdown',cx,cy); await tick();
-      fire('pointermove',cx+ppf,cy); await tick(); await tick();
-      fire('pointerup',cx+ppf,cy); await tick(); }
-    const w1=USERGEO.ovD[3] ? Math.hypot(USERGEO.ovD[3].x2-USERGEO.ovD[3].x1, USERGEO.ovD[3].y2-USERGEO.ovD[3].y1) : 0;
-    const w0=Math.hypot(DOORS[3].x2-DOORS[3].x1, DOORS[3].y2-DOORS[3].y1);
-    T('door-width-drag', Math.abs(w1-(w0+1))<0.35, w1.toFixed(2)+' vs '+(w0+1).toFixed(2));
-    USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; wallEdit.sel=null; geoChanged(); await tick();
-
-    // ===== 门宽/端点数值编辑 =====
-    setView('2d'); await tick();
-    document.querySelector('#wtoolSeg button[data-t="select"]').click(); await tick();
-    const [ex,ey]=SPT(452/11.2,137.4/11.2);
-    fire('pointerdown',ex,ey); await tick(); fire('pointerup',ex,ey); await tick();
-    T('width-input-populated', +document.querySelector('#dWidth').value>0, document.querySelector('#dWidth').value+document.querySelector('#dwU').textContent);
-    // 数值改宽（cm）：铰链端固定
-    const wIn=document.querySelector('#dWidth');
-    const before=selDoor(), bx1=before.x1, bw=Math.hypot(before.x2-before.x1,before.y2-before.y1);
-    wIn.value=String(Math.round(bw*30.48)+20);
-    wIn.dispatchEvent(new Event('change',{bubbles:true})); await tick();
-    const aft=selDoor(), aw=Math.hypot(aft.x2-aft.x1,aft.y2-aft.y1);
-    T('width-input-applies', Math.abs(aw-(bw+20/30.48))<0.05, (aw*30.48).toFixed(0)+'cm');
-    T('width-keeps-hinge-end', Math.abs(aft.x1-bx1)<1e-6, 'x1 held');
-    T('width-linkage-opening', Object.keys(USERGEO.ovW).length>=1, 'ovW='+Object.keys(USERGEO.ovW).length);
-    // 端点选择按钮循环
-    document.querySelector('#dEndBtn').click(); await tick();
-    T('endpoint-select-btn', wallEdit.dEndSel===0 && document.querySelectorAll('.dEnd').length===2, 'dEndSel='+wallEdit.dEndSel);
-    // 方向键改宽（激活起点）
-    const b2=selDoor(), w2=Math.hypot(b2.x2-b2.x1,b2.y2-b2.y1);
-    key('ArrowRight'); await tick();
-    const a2=selDoor(), w3=Math.hypot(a2.x2-a2.x1,a2.y2-a2.y1);
-    T('arrow-resizes-active-end', Math.abs(w3-(w2-1/30.48))<0.02, ((w2-w3)*30.48).toFixed(1)+'cm 缩短');
-    // 取消激活 → 方向键整体滑动
-    document.querySelector('#dEndBtn').click(); await tick();
-    document.querySelector('#dEndBtn').click(); await tick();
-    T('endpoint-btn-cycles-back', wallEdit.dEndSel===null, String(wallEdit.dEndSel));
-    const b3=selDoor(), b3x=b3.x1, b3w=Math.hypot(b3.x2-b3.x1,b3.y2-b3.y1);
-    key('ArrowRight',null,true); await tick();
-    const a3=selDoor(), a3w=Math.hypot(a3.x2-a3.x1,a3.y2-a3.y1);
-    T('arrow-slides-whole-door', Math.abs(a3w-b3w)<1e-6 && a3.x1>b3x, 'dx='+((a3.x1-b3x)*30.48).toFixed(1)+'cm 宽不变');
-    // 关键回归：加门工具模式下也能拖端点（此前被工具分支拦截）
-    USERGEO.ovD={}; USERGEO.ovW={}; wallEdit.sel=null; wallEdit.dEndSel=null; geoChanged(); await tick();
-    document.querySelector('#wtoolSeg button[data-t="door"]').click(); await tick();
-    fire('pointerdown',ex,ey); await tick(); fire('pointerup',ex,ey); await tick();
-    const eh2=document.querySelectorAll('.dEnd')[1];
-    let dragOK=false;
-    if(eh2){ const r=eh2.getBoundingClientRect(); const cx=r.x+r.width/2, cy=r.y+r.height/2;
-      const w0=Math.hypot(selDoor().x2-selDoor().x1, selDoor().y2-selDoor().y1);
-      fire('pointerdown',cx,cy); await tick();
-      fire('pointermove',cx+ppf,cy); await tick(); await tick();
-      fire('pointerup',cx+ppf,cy); await tick();
-      const w1b=Math.hypot(selDoor().x2-selDoor().x1, selDoor().y2-selDoor().y1);
-      dragOK = Math.abs(w1b-(w0+1))<0.35; }
-    T('endpoint-drag-in-door-tool', dragOK, 'BUGFIX');
-    USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; wallEdit.sel=null; wallEdit.dEndSel=null; geoChanged(); await tick();
-
-    // ===== 审查缺陷回归 =====
-    USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; USERGEO.hiddenD=[]; wallEdit.sel=null; wallEdit.dEndSel=null; geoChanged(); await tick();
-    document.querySelector('#wtoolSeg button[data-t="select"]').click(); await tick();
-    const [zx,zy]=SPT(452/11.2,137.4/11.2);
-    // (10) 纯点选不得写 override
-    fire('pointerdown',zx,zy); await tick(); fire('pointerup',zx,zy); await tick();
-    T('bug10-click-no-override', Object.keys(USERGEO.ovW).length===0 && Object.keys(USERGEO.ovD).length===0,
-      'ovW='+Object.keys(USERGEO.ovW).length+' ovD='+Object.keys(USERGEO.ovD).length);
-    // (2) 门宽上限：400cm 不得把墙垛拉反
-    const wallsBefore=WALLS.map((w,i)=>i);
-    document.querySelector('#dWidth').value='400';
-    document.querySelector('#dWidth').dispatchEvent(new Event('change',{bubbles:true})); await tick();
-    const dNow=selDoor(), wNow=Math.hypot(dNow.x2-dNow.x1,dNow.y2-dNow.y1);
-    let flipped=0;
-    for(const k of Object.keys(USERGEO.ovW)){ const o=USERGEO.ovW[k], b=WALLS[+k];
-      const lo=Math.hypot(o.x2-o.x1,o.y2-o.y1), lb=Math.hypot(b.x2-b.x1,b.y2-b.y1);
-      const dot=((o.x2-o.x1)*(b.x2-b.x1)+(o.y2-o.y1)*(b.y2-b.y1));
-      if(lo<0.05 || dot<0) flipped++; }
-    T('bug2-width-clamped', wNow<12 && flipped===0, '宽='+(wNow*30.48).toFixed(0)+'cm 翻转/零长墙='+flipped);
-    // (1) 无零长度墙
-    let zeroLen=0;
-    for(const k of Object.keys(USERGEO.ovW)){ const o=USERGEO.ovW[k];
-      if(Math.hypot(o.x2-o.x1,o.y2-o.y1)<0.05) zeroLen++; }
-    T('bug1-no-zero-length-wall', zeroLen===0, String(zeroLen));
-    // (6) wRestore 同时清门覆盖
-    USERGEO.hiddenW=[]; USERGEO.hiddenP=[]; USERGEO.hiddenD=[]; USERGEO.ovW={}; USERGEO.ovP={}; USERGEO.ovD={};
-    geoChanged(); await tick();
-    T('bug6-restore-clears-doors', Object.keys(USERGEO.ovD).length===0 && USERGEO.hiddenD.length===0);
-    // (3) 单位切换刷新门宽显示
-    fire('pointerdown',zx,zy); await tick(); fire('pointerup',zx,zy); await tick();
-    const cmVal=+document.querySelector('#dWidth').value;
-    document.querySelector('#unitSeg button[data-u="ft"]').click(); await tick();
-    const inVal=+document.querySelector('#dWidth').value, unitTxt=document.querySelector('#dwU').textContent;
-    T('bug3-unit-switch-refresh', unitTxt==='in' && Math.abs(inVal-cmVal/2.54)<1.5, cmVal+'cm → '+inVal+unitTxt);
-    document.querySelector('#unitSeg button[data-u="cm"]').click(); await tick();
-    // (4) 容差放宽后主卧门(D0)的门垛能跟随
-    wallEdit.sel={kind:'door',src:'b',i:0}; wallEdit.dEndSel=null;
-    const lk=doorLinkage(selDoor(), wallEdit.sel);
-    const m0=lk.materialize();
-    T('bug4-jamb-linkage', m0.nb[0].length+m0.nb[1].length>0, 'nb='+(m0.nb[0].length+m0.nb[1].length)+' carrier='+(!!m0.carrier));
-    lk.rollback();
-    USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; USERGEO.hiddenD=[]; wallEdit.sel=null; wallEdit.dEndSel=null; geoChanged(); await tick();
-    // (9) 拖动中删除后指针移动不得抛错
-    fire('pointerdown',zx,zy); await tick();
-    fire('pointermove',zx+ppf,zy); await tick();
-    deleteSel(); await tick();
-    fire('pointermove',zx+2*ppf,zy); await tick();
-    fire('pointerup',zx+2*ppf,zy); await tick();
-    T('bug9-delete-during-drag', window.__ERRS.length===0, JSON.stringify(window.__ERRS));
-    USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; USERGEO.hiddenD=[]; wallEdit.sel=null; geoChanged(); await tick();
-
-
-    /* ===== 搜索：瑞典语字母折叠（v2.9） ===== */
-    const sIn=document.querySelector('#catSearch');
-    const srch=(q)=>{ sIn.value=q; sIn.dispatchEvent(new Event('input',{bubbles:true}));
-      return [...document.querySelectorAll('#catList .catItem .nm')].map(e=>e.firstChild.textContent.trim()); };
-    const allN=srch('').length;
-    // 英文字母拼写 == 瑞典语原拼写，结果必须完全一致且非空
-    for(const [ascii, native] of [['saltsjobaden','saltsjöbaden'], ['orfjall','örfjäll'],
-        ['raskog','råskog'], ['poang','poäng'], ['besta','bestå'], ['soderhamn','söderhamn'],
-        ['vittsjo','vittsjö'], ['idasen','idåsen'], ['radmanso','rådmansö'], ['stall','ställ'],
-        ['idanas','idanäs']]){
-      const a=srch(ascii), b=srch(native);
-      T('search-fold-'+ascii, a.length>0 && a.length===b.length && a.join('|')===b.join('|'),
-        'ascii='+a.length+' native='+b.length+(a.length?' 例:'+a[0]:''));
+    /* ---- 2. BVH 正确性（CPU 校验）---- */
+    const t1=performance.now();
+    const B=ptBuildBVH(S.nTri, S.cen, S.bmn, S.bmx);
+    const tBvh=performance.now()-t1;
+    T('pt-bvh-built', B.nodeCnt>1 && B.nodeCnt<S.nTri*2, B.nodeCnt.toLocaleString()+' 节点 · '+Math.round(tBvh)+'ms');
+    // idx 必须是一个排列
+    const seen=new Uint8Array(S.nTri); let dup=0;
+    for(let i=0;i<S.nTri;i++){ if(seen[B.idx[i]]) dup++; seen[B.idx[i]]=1; }
+    T('pt-bvh-idx-permutation', dup===0, 'dup='+dup);
+    // 遍历树：叶子计数之和 = 三角形数；每个三角形都在所属叶子的包围盒里；孩子盒在父盒内
+    const N=B.nodes; let leafSum=0, badTri=0, badChild=0, maxDepth=0, leaves=0, maxLeaf=0;
+    const EPS=1e-3;
+    const inside=(o, x0,y0,z0,x1,y1,z1)=>
+      x0>=N[o]-EPS && y0>=N[o+1]-EPS && z0>=N[o+2]-EPS &&
+      x1<=N[o+4]+EPS && y1<=N[o+5]+EPS && z1<=N[o+6]+EPS;
+    const st=[[0,0]];
+    while(st.length){
+      const [ni,d]=st.pop(); const o=ni*8; maxDepth=Math.max(maxDepth,d);
+      const cnt=N[o+7], first=N[o+3];
+      if(cnt>0){
+        leaves++; leafSum+=cnt; maxLeaf=Math.max(maxLeaf,cnt);
+        for(let i=first;i<first+cnt;i++){
+          const t=B.idx[i]*3;
+          if(!inside(o, S.bmn[t],S.bmn[t+1],S.bmn[t+2], S.bmx[t],S.bmx[t+1],S.bmx[t+2])) badTri++;
+        }
+      } else {
+        const l=first, r=first+1;
+        for(const c of [l,r]){
+          const co=c*8;
+          if(!inside(o, N[co],N[co+1],N[co+2], N[co+4],N[co+5],N[co+6])) badChild++;
+        }
+        st.push([l,d+1],[r,d+1]);
+      }
     }
-    T('search-fold-uppercase', srch('SALTSJOBADEN').length===srch('saltsjobaden').length && srch('SALTSJOBADEN').length>0);
-    T('search-fold-multicolor', srch('raskog').length>1, srch('raskog').length+' 个颜色');
-    T('search-fold-diameter-o', srch('o70').length>0 && srch('o70').join('|')===srch('ø70').join('|'), 'Ø70 可用 o70 搜到');
-    T('search-cjk-unaffected', srch('沙发').length>0, srch('沙发').length+' 条');
-    T('search-cat-unaffected', srch('照明').length>0 || srch('灯').length>0);
-    T('search-empty-restores', srch('').length===allN, allN+' 条');
-    T('search-nomatch', srch('zzzqx').length===0);
-    T('search-trims-space', srch('  poang  ').length===srch('poang').length && srch('poang').length>0);
-    srch('');
+    T('pt-bvh-covers-all', leafSum===S.nTri, leafSum+'/'+S.nTri);
+    T('pt-bvh-tri-in-leaf-box', badTri===0, 'bad='+badTri);
+    T('pt-bvh-child-in-parent', badChild===0, 'bad='+badChild);
+    T('pt-bvh-depth-fits-stack', maxDepth<48, 'depth='+maxDepth+' 叶子='+leaves+' 最大叶='+maxLeaf);
+
+    /* ---- 3. GPU：着色器编译 + 出图 ---- */
+    const errs0=window.__EPT.length;
+    const img=await new Promise(res=>{
+      ptRender(4, {maxPx: 90*70, bounces: 3, onDone: (cv,spp)=>res({cv,spp})});
+      setTimeout(()=>res(null), 90000);
+    });
+    T('pt-render-finished', !!img && img.spp>=4, img? (img.spp+' spp · '+img.cv.width+'x'+img.cv.height) : '超时/未完成');
+    const shaderErr=window.__EPT.slice(errs0).filter(m=>/shader|GLSL|program|compil/i.test(m));
+    T('pt-shader-compiles', shaderErr.length===0, shaderErr.join(' ;; ').slice(0,400));
+    if(img && img.cv){
+      const g=img.cv.getContext('2d');
+      const d=g.getImageData(0,0,img.cv.width,img.cv.height).data;
+      let sum=0, nz=0, mx=0;
+      for(let i=0;i<d.length;i+=4){ const l=(d[i]*0.299+d[i+1]*0.587+d[i+2]*0.114);
+        sum+=l; if(l>4) nz++; mx=Math.max(mx,l); }
+      const n=d.length/4, mean=sum/n, frac=nz/n;
+      T('pt-image-not-black', mean>6 && frac>0.35, '均值='+mean.toFixed(1)+' 亮像素占比='+(frac*100).toFixed(0)+'% 峰值='+mx);
+      T('pt-image-has-range', mx>60, '峰值='+mx);
+    }
+    T('pt-cleanup', PT===null, 'PT='+(PT===null?'已释放':'仍占用'));
   }catch(e){ log.push('EXC '+e.message+' | '+(e.stack||'').split('\n')[1]); }
-  log.push('ERRS: '+JSON.stringify(window.__ERRS));
-  const pre=document.createElement('pre'); pre.id='wetest'; pre.textContent=log.join('\n');
+  log.push('ERRS: '+JSON.stringify(window.__EPT.slice(0,6)));
+  const pre=document.createElement('pre'); pre.id='tpt'; pre.textContent=log.join('\n');
   document.body.appendChild(pre);
 }
 </script>

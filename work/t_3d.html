@@ -39,6 +39,7 @@
   #btnWallEdit.on{background:#26e0a8; color:#0b0d10;}
   #btnUnderlay.on{background:#3d8bfd; color:#fff;}
   #btnPhoto{background:#6b4bd6; color:#fff;}
+  #btnPT{background:#0f7a5a; color:#fff;}
   #loading3d{position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center;
     gap:14px; background:rgba(16,18,21,.92); color:#cfd4dc; font-size:14px; letter-spacing:.5px;}
   #loading3d .spin{width:26px; height:26px; border:3px solid #333a45; border-top-color:#4c8dff;
@@ -138,7 +139,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v2.9</small></div>
+  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v3.0</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btn3d">3D 渲染</button>
@@ -168,6 +169,7 @@
   </div>
   <div class="spacer"></div>
   <button class="btn" id="btnPhoto" title="渐进式累积渲染：软阴影 + 环境光 + 抗锯齿">照片级渲染</button>
+  <button class="btn" id="btnPT" title="GPU 路径追踪：真全局光照 / 真反射折射 / 真软阴影（慢）">光追渲染</button>
   <button class="btn" id="btnUnderlay" title="把官方 layout 图垫在矢量图下，便于对照/描图">底图对照</button>
   <button class="btn" id="btnRefPhoto">原户型图</button>
   <button class="btn" id="btnExport">导出图片</button>
@@ -3037,6 +3039,781 @@ function showPhotoResult(cv){
   bar.appendChild(dl); bar.appendChild(cl); box.appendChild(bar);
   $('#photoModal').style.display='flex';
 }
+
+/* =====================================================================
+   GPU 路径追踪（真·光线追踪）
+
+   浏览器里拿不到显卡的 RT core —— WebGPU 至今没有 ray query / RT pipeline，
+   WebGL2 更没有。所以这里是「用 GPU 的通用计算单元跑软件光追」：
+   自建 BVH → 打包进浮点纹理 → 片元着色器里遍历 → 逐帧累积。
+   路径积分是真的（多次弹射的全局光照、真反射、真折射、真软阴影），
+   只是求交靠 shader 算，不是硬件加速。
+
+   与旧的「照片级渲染」的区别：那个是抖动光源的光栅化累积（软阴影 + 伪 AO），
+   没有真正的间接光；这个是无偏路径追踪。
+   ===================================================================== */
+const PT_W = 2048;                                    // 数据纹理宽度
+let PT = null;                                        // 当前构建好的场景数据
+
+function ptDataTex(f32, texels){
+  const H = Math.max(1, Math.ceil(texels / PT_W));
+  const data = new Float32Array(PT_W * H * 4);
+  data.set(f32.subarray(0, Math.min(f32.length, PT_W * H * 4)));
+  const t = new THREE.DataTexture(data, PT_W, H, THREE.RGBAFormat, THREE.FloatType);
+  t.minFilter = t.magFilter = THREE.NearestFilter;
+  t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping;
+  t.generateMipmaps = false; t.needsUpdate = true;
+  return t;
+}
+
+/* ---------- 1. 收集场景三角形 ---------- */
+function ptCollect(){
+  const scene = three.scene;
+  scene.updateMatrixWorld(true);
+  const meshes = [];
+  scene.traverse(o=>{
+    if(!o.isMesh || !o.geometry || !o.material || Array.isArray(o.material)) return;
+    if(o.userData && o.userData.ptSkip) return;
+    let p = o, vis = true;
+    while(p){ if(!p.visible){ vis = false; break; } p = p.parent; }
+    if(!vis) return;
+    const g = o.geometry;
+    if(!g.attributes || !g.attributes.position) return;
+    const n = g.index ? (g.index.count/3) : (g.attributes.position.count/3);
+    if(n >= 1) meshes.push({o, n: Math.floor(n)});
+  });
+  let nTri = 0; for(const m of meshes) nTri += m.n;
+  if(!nTri) return null;
+
+  const mats = [], matIdx = new Map(), maps = [], mapIdx = new Map();
+  const matIdOf = (m)=>{
+    if(matIdx.has(m.uuid)) return matIdx.get(m.uuid);
+    const id = mats.length; matIdx.set(m.uuid, id);
+    let layer = -1, rx = 1, ry = 1, ox = 0, oy = 0;
+    if(m.map && m.map.image){
+      if(mapIdx.has(m.map.uuid)) layer = mapIdx.get(m.map.uuid);
+      else { layer = maps.length; mapIdx.set(m.map.uuid, layer); maps.push(m.map); }
+      rx = m.map.repeat.x; ry = m.map.repeat.y; ox = m.map.offset.x; oy = m.map.offset.y;
+    }
+    const glass = !!(m.transparent && m.opacity != null && m.opacity < 0.75);
+    const ei = (m.emissiveIntensity == null ? 1 : m.emissiveIntensity);
+    mats.push({
+      c: m.color || {r:1,g:1,b:1},
+      rough: Math.max(0.015, m.roughness == null ? 0.85 : m.roughness),
+      metal: m.metalness == null ? 0 : m.metalness,
+      er: m.emissive ? m.emissive.r*ei : 0,
+      eg: m.emissive ? m.emissive.g*ei : 0,
+      eb: m.emissive ? m.emissive.b*ei : 0,
+      trans: glass ? 0.93 : 0,
+      ior: m.ior || 1.5,
+      layer, rx, ry, ox, oy
+    });
+    return id;
+  };
+
+  const P = new Float32Array(nTri*12);      // 3 texel/三角形：xyz + matId
+  const A = new Float32Array(nTri*12);      // 3 texel/三角形：法线八面体编码 xy + uv
+  const cen = new Float32Array(nTri*3), bmn = new Float32Array(nTri*3), bmx = new Float32Array(nTri*3);
+  const oct = (x,y,z)=>{                    // 法线八面体编码（省一个通道）
+    const s = Math.abs(x)+Math.abs(y)+Math.abs(z) || 1;
+    let ox2 = x/s, oy2 = y/s;
+    if(z < 0){ const t = ox2; ox2 = (1-Math.abs(oy2))*(t>=0?1:-1); oy2 = (1-Math.abs(t))*(oy2>=0?1:-1); }
+    return [ox2, oy2];
+  };
+  const mtx = new THREE.Matrix4(), nm = new THREE.Matrix3();
+  const va = new THREE.Vector3(), vb = new THREE.Vector3(), vc = new THREE.Vector3();
+  const na = new THREE.Vector3(), nb = new THREE.Vector3(), nc = new THREE.Vector3();
+  let ti = 0;
+  for(const {o} of meshes){
+    const g = o.geometry, mi = matIdOf(o.material);
+    mtx.copy(o.matrixWorld); nm.getNormalMatrix(mtx);
+    const pos = g.attributes.position, nor = g.attributes.normal, uv = g.attributes.uv;
+    const ix = g.index;
+    const cnt = ix ? ix.count : pos.count;
+    for(let k = 0; k + 2 < cnt; k += 3){
+      const i0 = ix ? ix.getX(k) : k, i1 = ix ? ix.getX(k+1) : k+1, i2 = ix ? ix.getX(k+2) : k+2;
+      va.fromBufferAttribute(pos, i0).applyMatrix4(mtx);
+      vb.fromBufferAttribute(pos, i1).applyMatrix4(mtx);
+      vc.fromBufferAttribute(pos, i2).applyMatrix4(mtx);
+      if(nor){ na.fromBufferAttribute(nor,i0).applyMatrix3(nm).normalize();
+               nb.fromBufferAttribute(nor,i1).applyMatrix3(nm).normalize();
+               nc.fromBufferAttribute(nor,i2).applyMatrix3(nm).normalize(); }
+      else { na.subVectors(vb,va).cross(vc.clone().sub(va)).normalize(); nb.copy(na); nc.copy(na); }
+      const o12 = ti*12;
+      P[o12+0]=va.x; P[o12+1]=va.y; P[o12+2]=va.z; P[o12+3]=mi;
+      P[o12+4]=vb.x; P[o12+5]=vb.y; P[o12+6]=vb.z; P[o12+7]=0;
+      P[o12+8]=vc.x; P[o12+9]=vc.y; P[o12+10]=vc.z; P[o12+11]=0;
+      const e0=oct(na.x,na.y,na.z), e1=oct(nb.x,nb.y,nb.z), e2=oct(nc.x,nc.y,nc.z);
+      A[o12+0]=e0[0]; A[o12+1]=e0[1]; A[o12+2]=uv?uv.getX(i0):0; A[o12+3]=uv?uv.getY(i0):0;
+      A[o12+4]=e1[0]; A[o12+5]=e1[1]; A[o12+6]=uv?uv.getX(i1):0; A[o12+7]=uv?uv.getY(i1):0;
+      A[o12+8]=e2[0]; A[o12+9]=e2[1]; A[o12+10]=uv?uv.getX(i2):0; A[o12+11]=uv?uv.getY(i2):0;
+      const o3 = ti*3;
+      cen[o3]=(va.x+vb.x+vc.x)/3; cen[o3+1]=(va.y+vb.y+vc.y)/3; cen[o3+2]=(va.z+vb.z+vc.z)/3;
+      bmn[o3]=Math.min(va.x,vb.x,vc.x); bmn[o3+1]=Math.min(va.y,vb.y,vc.y); bmn[o3+2]=Math.min(va.z,vb.z,vc.z);
+      bmx[o3]=Math.max(va.x,vb.x,vc.x); bmx[o3+1]=Math.max(va.y,vb.y,vc.y); bmx[o3+2]=Math.max(va.z,vb.z,vc.z);
+      ti++;
+    }
+  }
+  return {nTri: ti, P, A, cen, bmn, bmx, mats, maps};
+}
+
+/* ---------- 2. 分箱 SAH BVH ---------- */
+function ptBuildBVH(nTri, cen, bmn, bmx){
+  const idx = new Uint32Array(nTri); for(let i=0;i<nTri;i++) idx[i]=i;
+  const nodes = new Float32Array(Math.max(4, nTri*2) * 8);
+  let nodeCnt = 1;
+  const LEAF = 4, BINS = 12, MAXD = 44;
+  const bC = new Int32Array(BINS*3);
+  const bB = new Float32Array(BINS*3*6);
+  const setB = (ni, first, count)=>{
+    let x0=Infinity,y0=Infinity,z0=Infinity,x1=-Infinity,y1=-Infinity,z1=-Infinity;
+    for(let i=first;i<first+count;i++){
+      const t=idx[i]*3;
+      if(bmn[t]<x0)x0=bmn[t]; if(bmn[t+1]<y0)y0=bmn[t+1]; if(bmn[t+2]<z0)z0=bmn[t+2];
+      if(bmx[t]>x1)x1=bmx[t]; if(bmx[t+1]>y1)y1=bmx[t+1]; if(bmx[t+2]>z1)z1=bmx[t+2];
+    }
+    const o=ni*8;
+    nodes[o]=x0; nodes[o+1]=y0; nodes[o+2]=z0; nodes[o+3]=first;
+    nodes[o+4]=x1; nodes[o+5]=y1; nodes[o+6]=z1; nodes[o+7]=count;
+  };
+  setB(0, 0, nTri);
+  const stack = [[0, 0]];
+  const tmp = new Uint32Array(nTri);
+  while(stack.length){
+    const [ni, depth] = stack.pop();
+    const o = ni*8, first = nodes[o+3], count = nodes[o+7];
+    if(count <= LEAF || depth >= MAXD) continue;
+    // 质心包围盒
+    let cx0=Infinity,cy0=Infinity,cz0=Infinity,cx1=-Infinity,cy1=-Infinity,cz1=-Infinity;
+    for(let i=first;i<first+count;i++){
+      const t=idx[i]*3;
+      if(cen[t]<cx0)cx0=cen[t]; if(cen[t]>cx1)cx1=cen[t];
+      if(cen[t+1]<cy0)cy0=cen[t+1]; if(cen[t+1]>cy1)cy1=cen[t+1];
+      if(cen[t+2]<cz0)cz0=cen[t+2]; if(cen[t+2]>cz1)cz1=cen[t+2];
+    }
+    const ext=[cx1-cx0, cy1-cy0, cz1-cz0], mn=[cx0,cy0,cz0];
+    bC.fill(0);
+    for(let b=0;b<BINS*3;b++){ const q=b*6;
+      bB[q]=bB[q+1]=bB[q+2]=Infinity; bB[q+3]=bB[q+4]=bB[q+5]=-Infinity; }
+    for(let i=first;i<first+count;i++){
+      const t=idx[i]*3;
+      for(let ax=0;ax<3;ax++){
+        if(ext[ax] <= 1e-9) continue;
+        let b = Math.floor((cen[t+ax]-mn[ax])/ext[ax]*BINS); if(b>=BINS) b=BINS-1; if(b<0) b=0;
+        bC[ax*BINS+b]++;
+        const q=(ax*BINS+b)*6;
+        for(let c=0;c<3;c++){ if(bmn[t+c]<bB[q+c]) bB[q+c]=bmn[t+c]; if(bmx[t+c]>bB[q+3+c]) bB[q+3+c]=bmx[t+c]; }
+      }
+    }
+    const area=(x0,y0,z0,x1,y1,z1)=>{ const dx=Math.max(0,x1-x0),dy=Math.max(0,y1-y0),dz=Math.max(0,z1-z0);
+      return 2*(dx*dy+dy*dz+dz*dx); };
+    let bestCost=Infinity, bestAx=-1, bestBin=-1;
+    const L=new Float32Array(6), R=new Float32Array(6);
+    const lC=new Int32Array(BINS), lA=new Float32Array(BINS), rC=new Int32Array(BINS), rA=new Float32Array(BINS);
+    for(let ax=0;ax<3;ax++){
+      if(ext[ax] <= 1e-9) continue;
+      L[0]=L[1]=L[2]=Infinity; L[3]=L[4]=L[5]=-Infinity; let acc=0;
+      for(let b=0;b<BINS;b++){
+        const q=(ax*BINS+b)*6;
+        for(let c=0;c<3;c++){ if(bB[q+c]<L[c])L[c]=bB[q+c]; if(bB[q+3+c]>L[3+c])L[3+c]=bB[q+3+c]; }
+        acc += bC[ax*BINS+b]; lC[b]=acc; lA[b]=acc? area(L[0],L[1],L[2],L[3],L[4],L[5]) : 0;
+      }
+      R[0]=R[1]=R[2]=Infinity; R[3]=R[4]=R[5]=-Infinity; acc=0;
+      for(let b=BINS-1;b>=0;b--){
+        const q=(ax*BINS+b)*6;
+        for(let c=0;c<3;c++){ if(bB[q+c]<R[c])R[c]=bB[q+c]; if(bB[q+3+c]>R[3+c])R[3+c]=bB[q+3+c]; }
+        acc += bC[ax*BINS+b]; rC[b]=acc; rA[b]=acc? area(R[0],R[1],R[2],R[3],R[4],R[5]) : 0;
+      }
+      for(let b=0;b<BINS-1;b++){
+        if(!lC[b] || !rC[b+1]) continue;
+        const cost = lA[b]*lC[b] + rA[b+1]*rC[b+1];
+        if(cost < bestCost){ bestCost=cost; bestAx=ax; bestBin=b; }
+      }
+    }
+    if(bestAx < 0) continue;
+    const parentArea = area(nodes[o],nodes[o+1],nodes[o+2],nodes[o+4],nodes[o+5],nodes[o+6]);
+    if(parentArea > 0 && bestCost/parentArea + 0.5 >= count) continue;   // 分不划算就留成叶子
+    // 分区
+    let lo=first, hi=first+count;
+    let w=0;
+    for(let i=first;i<first+count;i++){
+      const t=idx[i]*3;
+      let b=Math.floor((cen[t+bestAx]-mn[bestAx])/ext[bestAx]*BINS); if(b>=BINS)b=BINS-1; if(b<0)b=0;
+      if(b<=bestBin) tmp[lo++]=idx[i]; else tmp[--hi]=idx[i];
+    }
+    const nl = lo-first;
+    if(nl===0 || nl===count) continue;
+    for(let i=first;i<first+count;i++) idx[i]=tmp[i];
+    // 右半边刚才是倒着写的，顺序无所谓
+    const li=nodeCnt++, ri=nodeCnt++;
+    setB(li, first, nl); setB(ri, first+nl, count-nl);
+    nodes[o+3]=li; nodes[o+7]=0;                       // 内部节点：leftFirst=左孩子，count=0
+    stack.push([li, depth+1], [ri, depth+1]);
+  }
+  return {nodes, nodeCnt, idx};
+}
+
+/* ---------- 3. 贴图打包成 2D 数组纹理 ---------- */
+function ptMapArray(maps, size){
+  const L = Math.max(1, maps.length);
+  const data = new Uint8Array(size*size*4*L);
+  const cv = document.createElement('canvas'); cv.width = cv.height = size;
+  const g = cv.getContext('2d', {willReadFrequently:true});
+  for(let i=0;i<maps.length;i++){
+    const im = maps[i].image;
+    g.clearRect(0,0,size,size);
+    try{
+      if(im && (im instanceof HTMLCanvasElement || im instanceof HTMLImageElement ||
+                (typeof ImageBitmap!=='undefined' && im instanceof ImageBitmap) || im instanceof OffscreenCanvas)){
+        g.drawImage(im, 0, 0, size, size);
+      } else if(im && im.data && im.width){          // DataTexture
+        const tc=document.createElement('canvas'); tc.width=im.width; tc.height=im.height;
+        const tg=tc.getContext('2d');
+        const idt=tg.createImageData(im.width, im.height);
+        const src=im.data, comp=src.length/(im.width*im.height);
+        for(let p=0;p<im.width*im.height;p++){
+          idt.data[p*4]=src[p*comp]; idt.data[p*4+1]=src[p*comp+(comp>1?1:0)];
+          idt.data[p*4+2]=src[p*comp+(comp>2?2:0)]; idt.data[p*4+3]=comp>3?src[p*comp+3]:255;
+        }
+        tg.putImageData(idt,0,0); g.drawImage(tc,0,0,size,size);
+      } else { g.fillStyle='#ffffff'; g.fillRect(0,0,size,size); }
+    }catch(e){ g.fillStyle='#ffffff'; g.fillRect(0,0,size,size); }
+    data.set(g.getImageData(0,0,size,size).data, i*size*size*4);
+  }
+  const t = new THREE.DataArrayTexture(data, size, size, L);
+  t.format = THREE.RGBAFormat; t.type = THREE.UnsignedByteType;
+  t.minFilter = t.magFilter = THREE.LinearFilter;
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.generateMipmaps = false; t.needsUpdate = true;
+  return t;
+}
+
+/* ---------- 4. 灯光 ---------- */
+function ptLights(){
+  const out = [];
+  const p = new THREE.Vector3(), tp = new THREE.Vector3();
+  three.scene.traverse(o=>{
+    if(!o.isLight || !o.visible || !(o.intensity > 0)) return;
+    let q=o, vis=true; while(q){ if(!q.visible){vis=false;break;} q=q.parent; }
+    if(!vis) return;
+    o.updateMatrixWorld(true);
+    p.setFromMatrixPosition(o.matrixWorld);
+    if(o.isDirectionalLight){
+      if(o.target) o.target.updateMatrixWorld(true);
+      tp.setFromMatrixPosition(o.target ? o.target.matrixWorld : new THREE.Matrix4());
+      const d = p.clone().sub(tp).normalize();
+      out.push([0,0,0,0, o.color.r,o.color.g,o.color.b,o.intensity, d.x,d.y,d.z,0, 0,0,0.030,0]);
+    } else if(o.isSpotLight){
+      if(o.target) o.target.updateMatrixWorld(true);
+      tp.setFromMatrixPosition(o.target ? o.target.matrixWorld : new THREE.Matrix4());
+      const d = tp.clone().sub(p).normalize();
+      const co = Math.cos(o.angle), pc = Math.cos(o.angle*(1-(o.penumbra||0)));
+      out.push([p.x,p.y,p.z,2, o.color.r,o.color.g,o.color.b,o.intensity,
+                d.x,d.y,d.z,(o.distance||0), co,pc,0.10,0]);
+    } else if(o.isPointLight){
+      out.push([p.x,p.y,p.z,1, o.color.r,o.color.g,o.color.b,o.intensity,
+                0,0,0,(o.distance||0), 0,0,0.13,0]);
+    }
+  });
+  return out;
+}
+
+/* ---------- 5. 构建 ---------- */
+function ptBuild(onProgress){
+  const t0 = performance.now();
+  const S = ptCollect();
+  if(!S) return null;
+  onProgress && onProgress('收集三角形 '+S.nTri.toLocaleString());
+  const B = ptBuildBVH(S.nTri, S.cen, S.bmn, S.bmx);
+  onProgress && onProgress('BVH '+B.nodeCnt.toLocaleString()+' 节点');
+  // 按 BVH 顺序重排三角形，叶子就能直接用连续区间，省一张索引纹理
+  const P = new Float32Array(S.nTri*12), A = new Float32Array(S.nTri*12);
+  for(let i=0;i<S.nTri;i++){
+    const s = B.idx[i]*12, d = i*12;
+    for(let k=0;k<12;k++){ P[d+k]=S.P[s+k]; A[d+k]=S.A[s+k]; }
+  }
+  const M = new Float32Array(S.mats.length*16);
+  S.mats.forEach((m,i)=>{
+    const o=i*16;
+    M[o]=m.c.r; M[o+1]=m.c.g; M[o+2]=m.c.b; M[o+3]=m.rough;
+    M[o+4]=m.er; M[o+5]=m.eg; M[o+6]=m.eb; M[o+7]=m.metal;
+    M[o+8]=m.layer; M[o+9]=m.rx; M[o+10]=m.ry; M[o+11]=m.trans;
+    M[o+12]=m.ox; M[o+13]=m.oy; M[o+14]=m.ior; M[o+15]=0;
+  });
+  const lights = ptLights();
+  const LT = new Float32Array(Math.max(1,lights.length)*16);
+  lights.forEach((l,i)=>LT.set(l, i*16));
+  const data = {
+    nTri: S.nTri, nNode: B.nodeCnt, nMat: S.mats.length, nLight: lights.length,
+    tPos: ptDataTex(P, S.nTri*3),
+    tAttr: ptDataTex(A, S.nTri*3),
+    tBVH: ptDataTex(B.nodes.subarray(0, B.nodeCnt*8), B.nodeCnt*2),
+    tMat: ptDataTex(M, S.mats.length*4),
+    tLight: ptDataTex(LT, Math.max(1,lights.length)*4),
+    tMaps: ptMapArray(S.maps, 512),
+    nMaps: S.maps.length,
+    ms: Math.round(performance.now()-t0)
+  };
+  return data;
+}
+function ptDispose(){
+  if(!PT) return;
+  ['tPos','tAttr','tBVH','tMat','tLight','tMaps'].forEach(k=>{ if(PT[k]) PT[k].dispose(); });
+  PT = null;
+}
+
+/* ---------- 6. 着色器 ---------- */
+const PT_FRAG = `
+precision highp float;
+precision highp int;
+precision highp sampler2DArray;
+out vec4 outColor;
+uniform sampler2D tPos, tAttr, tBVH, tMat, tLight, tEnv;
+uniform sampler2DArray tMaps;
+uniform vec2  uRes;
+uniform vec3  uCamPos;
+uniform mat4  uCamMat;
+uniform float uTanHalf, uAspect;
+uniform int   uFrame, uBounces, uNLight, uHasEnv, uEnvSRGB;
+uniform float uEnvInt;
+uniform vec3  uSkyTop, uSkyBot;
+const float PI = 3.14159265359;
+const int   TW = ${PT_W};
+
+uint rngState;
+uint pcg(){ rngState = rngState*747796405u + 2891336453u;
+  uint w = ((rngState >> ((rngState >> 28u) + 4u)) ^ rngState) * 277803737u;
+  return (w >> 22u) ^ w; }
+float rnd(){ return float(pcg()) * (1.0/4294967296.0); }
+
+vec4 fx(sampler2D t, int i){ return texelFetch(t, ivec2(i % TW, i / TW), 0); }
+
+vec3 octDec(vec2 e){
+  vec3 n = vec3(e.x, e.y, 1.0-abs(e.x)-abs(e.y));
+  float t = max(-n.z, 0.0);
+  n.x += n.x >= 0.0 ? -t : t;
+  n.y += n.y >= 0.0 ? -t : t;
+  return normalize(n);
+}
+vec3 srgb2lin(vec3 c){ return mix(c/12.92, pow((c+0.055)/1.055, vec3(2.4)), step(vec3(0.04045), c)); }
+
+/* --- 求交 --- */
+struct Hit { float t; int tri; vec2 bary; };
+
+bool triHit(vec3 ro, vec3 rd, int tri, inout float tBest, out vec2 bary){
+  vec3 a = fx(tPos, tri*3+0).xyz;
+  vec3 b = fx(tPos, tri*3+1).xyz;
+  vec3 c = fx(tPos, tri*3+2).xyz;
+  vec3 e1 = b-a, e2 = c-a;
+  vec3 pv = cross(rd, e2);
+  float det = dot(e1, pv);
+  if(abs(det) < 1e-12) return false;
+  float inv = 1.0/det;
+  vec3 tv = ro-a;
+  float u = dot(tv, pv)*inv; if(u < 0.0 || u > 1.0) return false;
+  vec3 qv = cross(tv, e1);
+  float v = dot(rd, qv)*inv; if(v < 0.0 || u+v > 1.0) return false;
+  float t = dot(e2, qv)*inv;
+  if(t > 2e-4 && t < tBest){ tBest = t; bary = vec2(u,v); return true; }
+  return false;
+}
+float boxHit(vec3 ro, vec3 invD, vec3 bmin, vec3 bmax, float tMax){
+  vec3 t0 = (bmin-ro)*invD, t1 = (bmax-ro)*invD;
+  vec3 tn = min(t0,t1), tf = max(t0,t1);
+  float a = max(max(tn.x,tn.y),tn.z);
+  float b = min(min(tf.x,tf.y),tf.z);
+  return (a <= b && b > 0.0 && a < tMax) ? max(a, 0.0) : -1.0;
+}
+bool trace(vec3 ro, vec3 rd, float tMax, out Hit h){
+  vec3 invD = vec3(1.0)/rd;          // 除零得 ±Inf，slab 判定仍然正确
+  h.t = tMax; h.tri = -1; h.bary = vec2(0.0);
+  int stack[48]; int sp = 0; int node = 0;
+  for(int guard = 0; guard < 8192; guard++){
+    vec4 n0 = fx(tBVH, node*2+0);
+    vec4 n1 = fx(tBVH, node*2+1);
+    int cnt = int(n1.w);
+    if(cnt > 0){
+      int first = int(n0.w);
+      for(int k = 0; k < cnt; k++){
+        vec2 bc;
+        if(triHit(ro, rd, first+k, h.t, bc)){ h.tri = first+k; h.bary = bc; }
+      }
+    } else {
+      int l = int(n0.w), r = l+1;
+      vec4 l0 = fx(tBVH, l*2+0), l1 = fx(tBVH, l*2+1);
+      vec4 r0 = fx(tBVH, r*2+0), r1 = fx(tBVH, r*2+1);
+      float dl = boxHit(ro, invD, l0.xyz, l1.xyz, h.t);
+      float dr = boxHit(ro, invD, r0.xyz, r1.xyz, h.t);
+      int nearN = l, farN = r; float dn = dl, df = dr;
+      if(dr >= 0.0 && (dl < 0.0 || dr < dl)){ nearN = r; farN = l; dn = dr; df = dl; }
+      if(dn >= 0.0){
+        if(df >= 0.0 && sp < 48){ stack[sp] = farN; sp++; }
+        node = nearN; continue;
+      }
+    }
+    if(sp == 0) break;
+    sp--; node = stack[sp];
+  }
+  return h.tri >= 0;
+}
+int matOf(int tri){ return int(fx(tPos, tri*3).w + 0.5); }
+
+/* 阴影光线：遇到玻璃继续走并衰减 */
+vec3 visibility(vec3 ro, vec3 rd, float tMax){
+  vec3 tr = vec3(1.0);
+  for(int i = 0; i < 4; i++){
+    Hit h;
+    if(!trace(ro, rd, tMax, h)) return tr;
+    int mi = matOf(h.tri);
+    vec4 m0 = fx(tMat, mi*4+0);
+    vec4 m2 = fx(tMat, mi*4+2);
+    if(m2.w < 0.5) return vec3(0.0);
+    tr *= mix(vec3(1.0), m0.rgb, 0.6) * m2.w;
+    float adv = h.t + 1e-3;
+    ro += rd*adv; tMax -= adv;
+    if(tMax <= 0.0) break;
+  }
+  return tr;
+}
+
+/* --- BRDF --- */
+float D_GGX(float ndh, float a){ float a2=a*a; float d=ndh*ndh*(a2-1.0)+1.0; return a2/max(PI*d*d, 1e-9); }
+float V_Smith(float ndl, float ndv, float a){
+  float a2 = a*a;
+  float gv = ndl*sqrt(ndv*ndv*(1.0-a2)+a2);
+  float gl = ndv*sqrt(ndl*ndl*(1.0-a2)+a2);
+  return 0.5/max(gv+gl, 1e-6);
+}
+vec3 evalBRDF(vec3 N, vec3 V, vec3 L, vec3 alb, float rough, float metal){
+  float ndl = max(dot(N,L), 0.0), ndv = max(dot(N,V), 1e-4);
+  if(ndl <= 0.0) return vec3(0.0);
+  vec3 H = normalize(V+L);
+  float ndh = max(dot(N,H), 0.0), vdh = max(dot(V,H), 0.0);
+  float a = max(rough*rough, 1e-4);
+  vec3 F0 = mix(vec3(0.04), alb, metal);
+  vec3 F  = F0 + (1.0-F0)*pow(1.0-vdh, 5.0);
+  vec3 spec = F * D_GGX(ndh, a) * V_Smith(ndl, ndv, a);
+  vec3 diff = (1.0-F)*(1.0-metal)*alb/PI;
+  return diff + spec;
+}
+vec3 onb(vec3 n, vec3 v){
+  vec3 up = abs(n.y) < 0.92 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0);
+  vec3 t = normalize(cross(up, n)), b = cross(n, t);
+  return v.x*t + v.y*b + v.z*n;
+}
+vec3 cosineDir(vec3 n){
+  float r1 = rnd(), r2 = rnd();
+  float r = sqrt(r1), phi = 2.0*PI*r2;
+  return onb(n, vec3(r*cos(phi), r*sin(phi), sqrt(max(0.0, 1.0-r1))));
+}
+vec3 ggxDir(vec3 n, vec3 v, float a){
+  float r1 = rnd(), r2 = rnd();
+  float phi = 2.0*PI*r1;
+  float ct = sqrt((1.0-r2)/(1.0+(a*a-1.0)*r2));
+  float st = sqrt(max(0.0, 1.0-ct*ct));
+  vec3 h = onb(n, vec3(st*cos(phi), st*sin(phi), ct));
+  return reflect(-v, h);
+}
+
+/* --- 环境 --- */
+vec3 envRad(vec3 d){
+  vec3 c = mix(uSkyBot, uSkyTop, clamp(d.y*0.5+0.5, 0.0, 1.0));
+  if(uHasEnv == 1){
+    float u = atan(d.z, d.x)/(2.0*PI) + 0.5;
+    float v = asin(clamp(d.y,-1.0,1.0))/PI + 0.5;
+    vec3 e = texture(tEnv, vec2(u, v)).rgb;
+    if(uEnvSRGB == 1) e = srgb2lin(e);
+    c += e*uEnvInt;
+  }
+  return c;
+}
+
+/* --- 直接光（NEE） --- */
+vec3 directLight(vec3 P, vec3 N, vec3 V, vec3 alb, float rough, float metal){
+  if(uNLight == 0) return vec3(0.0);
+  int li = int(min(float(uNLight)-0.001, rnd()*float(uNLight)));
+  vec4 L0 = fx(tLight, li*4+0);
+  vec4 L1 = fx(tLight, li*4+1);
+  vec4 L2 = fx(tLight, li*4+2);
+  vec4 L3 = fx(tLight, li*4+3);
+  int type = int(L0.w + 0.5);
+  vec3 Ld; float dist; vec3 E;
+  if(type == 0){                                     // 平行光：锥内抖动 = 软阴影
+    vec3 d = normalize(L2.xyz);
+    float ang = rnd()*2.0*PI, rr = L3.z*sqrt(rnd());
+    vec3 up = abs(d.y) < 0.92 ? vec3(0.0,1.0,0.0) : vec3(1.0,0.0,0.0);
+    vec3 t1 = normalize(cross(up, d)), t2 = cross(d, t1);
+    Ld = normalize(d + (cos(ang)*t1 + sin(ang)*t2)*rr);
+    dist = 1e5;
+    E = L1.rgb*L1.w;
+  } else {                                           // 点/聚光：按小球采样 = 半影
+    vec3 rv = normalize(vec3(rnd()*2.0-1.0, rnd()*2.0-1.0, rnd()*2.0-1.0) + vec3(1e-4));
+    vec3 lp = L0.xyz + rv*L3.z;
+    vec3 dv = lp - P; dist = length(dv);
+    if(dist < 1e-5) return vec3(0.0);
+    Ld = dv/dist;
+    float atten = 1.0/max(dist*dist, 1e-6);
+    if(L2.w > 0.0){ float f = clamp(1.0 - pow(dist/L2.w, 4.0), 0.0, 1.0); atten *= f*f; }
+    E = L1.rgb*L1.w*atten;
+    if(type == 2){
+      float cd = dot(normalize(L2.xyz), -Ld);
+      float sp = smoothstep(L3.x, L3.y, cd);
+      if(sp <= 0.0) return vec3(0.0);
+      E *= sp;
+    }
+  }
+  float ndl = dot(N, Ld);
+  if(ndl <= 0.0) return vec3(0.0);
+  vec3 vis = visibility(P + N*2e-3, Ld, dist - 4e-3);
+  if(dot(vis,vis) <= 0.0) return vec3(0.0);
+  return evalBRDF(N, V, Ld, alb, rough, metal) * E * ndl * vis * float(uNLight);
+}
+
+void main(){
+  ivec2 pc = ivec2(gl_FragCoord.xy);
+  rngState = uint(pc.x) * 1973u + uint(pc.y) * 9277u + uint(uFrame) * 26699u + 1u;
+  pcg(); pcg();
+
+  vec2 px = gl_FragCoord.xy + vec2(rnd(), rnd()) - 0.5;
+  vec2 ndc = px/uRes*2.0 - 1.0;
+  vec3 dc = normalize(vec3(ndc.x*uTanHalf*uAspect, ndc.y*uTanHalf, -1.0));
+  vec3 rd = normalize((uCamMat*vec4(dc, 0.0)).xyz);
+  vec3 ro = uCamPos;
+
+  vec3 L = vec3(0.0), T = vec3(1.0);
+  for(int b = 0; b < 12; b++){
+    if(b >= uBounces) break;
+    Hit h;
+    if(!trace(ro, rd, 1e5, h)){ L += T*envRad(rd); break; }
+    // 顶点属性插值
+    vec4 a0 = fx(tAttr, h.tri*3+0), a1 = fx(tAttr, h.tri*3+1), a2 = fx(tAttr, h.tri*3+2);
+    float w = 1.0 - h.bary.x - h.bary.y;
+    vec3 Ng = normalize(octDec(a0.xy)*w + octDec(a1.xy)*h.bary.x + octDec(a2.xy)*h.bary.y);
+    vec2 uv = a0.zw*w + a1.zw*h.bary.x + a2.zw*h.bary.y;
+    vec3 P = ro + rd*h.t;
+    bool back = dot(Ng, rd) > 0.0;
+    vec3 N = back ? -Ng : Ng;
+    vec3 V = -rd;
+
+    int mi = matOf(h.tri);
+    vec4 m0 = fx(tMat, mi*4+0), m1 = fx(tMat, mi*4+1),
+         m2 = fx(tMat, mi*4+2), m3 = fx(tMat, mi*4+3);
+    vec3 alb = m0.rgb; float rough = m0.a;
+    vec3 emis = m1.rgb; float metal = m1.a;
+    float trans = m2.w;
+    if(m2.x >= 0.0){
+      vec2 tuv = uv*vec2(m2.y, m2.z) + vec2(m3.x, m3.y);
+      vec3 tc = texture(tMaps, vec3(fract(tuv), m2.x)).rgb;
+      alb *= srgb2lin(tc);
+    }
+    L += T*emis;
+
+    if(trans > 0.5){                                   // 电介质：菲涅尔决定反射/折射
+      float eta = back ? m3.z : 1.0/m3.z;
+      float c = clamp(dot(N, V), 0.0, 1.0);
+      float r0 = (1.0-m3.z)/(1.0+m3.z); r0 = r0*r0;
+      float F = r0 + (1.0-r0)*pow(1.0-c, 5.0);
+      vec3 refr = refract(-V, N, eta);
+      if(rnd() < F || dot(refr,refr) < 1e-6){ rd = reflect(-V, N); }
+      else { rd = normalize(refr); T *= mix(vec3(1.0), alb, 0.35); }
+      ro = P + rd*1e-3;
+      continue;
+    }
+
+    L += T*directLight(P, N, V, alb, rough, metal);
+
+    // BSDF 采样
+    vec3 F0 = mix(vec3(0.04), alb, metal);
+    float pSpec = clamp(0.05 + metal*0.85 + (1.0-rough)*0.22, 0.05, 0.95);
+    vec3 nd; float pdf;
+    if(rnd() < pSpec){
+      nd = ggxDir(N, V, max(rough*rough, 1e-4));
+      if(dot(nd, N) <= 0.0) break;
+      vec3 H = normalize(V+nd);
+      float ndh = max(dot(N,H), 1e-4), vdh = max(dot(V,H), 1e-4);
+      pdf = D_GGX(ndh, max(rough*rough,1e-4))*ndh/(4.0*vdh)*pSpec
+          + max(dot(nd,N),0.0)/PI*(1.0-pSpec);
+    } else {
+      nd = cosineDir(N);
+      if(dot(nd, N) <= 0.0) break;
+      vec3 H = normalize(V+nd);
+      float ndh = max(dot(N,H), 1e-4), vdh = max(dot(V,H), 1e-4);
+      pdf = D_GGX(ndh, max(rough*rough,1e-4))*ndh/(4.0*vdh)*pSpec
+          + max(dot(nd,N),0.0)/PI*(1.0-pSpec);
+    }
+    if(pdf < 1e-8) break;
+    T *= evalBRDF(N, V, nd, alb, rough, metal) * max(dot(N,nd),0.0) / pdf;
+    ro = P + N*2e-3;
+    rd = nd;
+
+    float q = max(T.r, max(T.g, T.b));
+    if(b > 2){
+      if(q < 0.02) break;
+      float pq = clamp(q, 0.05, 0.95);
+      if(rnd() > pq) break;
+      T /= pq;
+    }
+  }
+  L = clamp(L, 0.0, 60.0);                              // 夹掉萤火虫噪点
+  outColor = vec4(L, 1.0);
+}
+`;
+
+/* ---------- 7. 渲染循环 ---------- */
+function ptRender(samples, ptOpts){
+  ptOpts = ptOpts || {};   // 注意：内层 setTimeout 里有个 const opts（渲染目标参数），不能重名
+  if(!three || three.photo) return;
+  if(!three.renderer.capabilities.isWebGL2){ alert('当前浏览器没有 WebGL2，无法使用光线追踪渲染。'); return; }
+  samples = samples || 400;
+  const {renderer, cam, canvas} = three;
+  const bar = $('#photoBar'), lbl = $('#photoTxt');
+  bar.style.display = 'flex';
+  lbl.textContent = '光线追踪：正在构建 BVH…';
+  let cancelled = false;
+  three.photo = {cancel(){ cancelled = true; }};
+
+  setTimeout(()=>{
+    let built = null;
+    try{ built = ptBuild(m=>{ lbl.textContent = '光线追踪：'+m; }); }
+    catch(e){ console.error(e); }
+    if(!built){ lbl.textContent=''; bar.style.display='none'; three.photo=null;
+                alert('场景里没有可追踪的几何。'); return; }
+    ptDispose(); PT = built;
+
+    const W = canvas.clientWidth||canvas.width, H = canvas.clientHeight||canvas.height;
+    const MAXPX = ptOpts.maxPx || 1600*1000;
+    let sc = Math.min(1, Math.sqrt(MAXPX/(W*H)));
+    const rw = Math.max(64, Math.round(W*sc)), rh = Math.max(64, Math.round(H*sc));
+    const opts = {type:THREE.HalfFloatType, format:THREE.RGBAFormat,
+                  minFilter:THREE.NearestFilter, magFilter:THREE.NearestFilter, depthBuffer:false};
+    const accRT = new THREE.WebGLRenderTarget(rw, rh, opts);
+    const oCam = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+    const VS = 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
+    const VS3 = 'out vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.0,1.0); }';
+
+    const hemi = three.hemi, amb = three.amb;
+    const ambC = new THREE.Color(amb.color).multiplyScalar(amb.intensity);
+    const top = new THREE.Color(hemi.color).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
+    const bot = new THREE.Color(hemi.groundColor).multiplyScalar(hemi.intensity).add(ambC).multiplyScalar(1/Math.PI);
+    const pano = three.panorama || null;
+
+    const ptMat = new THREE.ShaderMaterial({
+      glslVersion: THREE.GLSL3,
+      uniforms:{
+        tPos:{value:PT.tPos}, tAttr:{value:PT.tAttr}, tBVH:{value:PT.tBVH},
+        tMat:{value:PT.tMat}, tLight:{value:PT.tLight}, tMaps:{value:PT.tMaps},
+        tEnv:{value:pano},
+        uRes:{value:new THREE.Vector2(rw,rh)},
+        uCamPos:{value:new THREE.Vector3()},
+        uCamMat:{value:new THREE.Matrix4()},
+        uTanHalf:{value:1}, uAspect:{value:rw/rh},
+        uFrame:{value:0}, uBounces:{value:ptOpts.bounces||6}, uNLight:{value:PT.nLight},
+        uHasEnv:{value:pano?1:0}, uEnvSRGB:{value:(pano&&pano.encoding===THREE.sRGBEncoding)?1:0},
+        uEnvInt:{value:0.42},
+        uSkyTop:{value:new THREE.Vector3(top.r,top.g,top.b)},
+        uSkyBot:{value:new THREE.Vector3(bot.r,bot.g,bot.b)}
+      },
+      vertexShader: VS3, fragmentShader: PT_FRAG,
+      blending: THREE.AdditiveBlending, transparent: true,
+      depthTest: false, depthWrite: false
+    });
+    const resMat = new THREE.ShaderMaterial({
+      uniforms:{tAcc:{value:accRT.texture}, uN:{value:1}, uExp:{value:renderer.toneMappingExposure}},
+      vertexShader: VS, fragmentShader: `
+        uniform sampler2D tAcc; uniform float uN; uniform float uExp; varying vec2 vUv;
+        vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }
+        void main(){ vec3 c=texture2D(tAcc,vUv).rgb/max(uN,1.0);
+          c=aces(c*uExp);
+          c=mix(c*12.92, 1.055*pow(max(c,vec3(0.0031308)),vec3(1.0/2.4))-0.055, step(vec3(0.0031308),c));
+          gl_FragColor=vec4(c,1.0); }`,
+      depthTest:false, depthWrite:false});
+
+    const qs = new THREE.Scene();
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2,2), ptMat); quad.frustumCulled=false; qs.add(quad);
+    const rs = new THREE.Scene();
+    const rq = new THREE.Mesh(new THREE.PlaneGeometry(2,2), resMat); rq.frustumCulled=false; rs.add(rq);
+
+    cam.updateMatrixWorld(true);
+    ptMat.uniforms.uCamPos.value.setFromMatrixPosition(cam.matrixWorld);
+    ptMat.uniforms.uCamMat.value.copy(cam.matrixWorld);
+    ptMat.uniforms.uTanHalf.value = Math.tan(cam.fov*Math.PI/360);
+    ptMat.uniforms.uAspect.value = rw/rh;
+
+    const savedPR = renderer.getPixelRatio(), savedAC = renderer.autoClear;
+    renderer.setPixelRatio(1);
+    renderer.setRenderTarget(accRT); renderer.setClearColor(0x000000,1); renderer.clear(true,true,true);
+    renderer.setRenderTarget(null);
+
+    const TX = 3, TY = 3, NT = TX*TY;              // 分块渲染：单次 draw 别太长，避免卡死界面
+    let spp = 0, tile = 0, frames = 0;
+    const t0 = performance.now();
+
+    const finish = (aborted)=>{
+      renderer.setRenderTarget(null);
+      renderer.setScissorTest(false);
+      renderer.autoClear = savedAC;
+      let out = null;
+      if(!aborted && spp > 0){
+        resMat.uniforms.uN.value = spp;
+        renderer.setSize(rw, rh, false);
+        renderer.autoClear = true;
+        renderer.render(rs, oCam);
+        const cv = document.createElement('canvas'); cv.width=rw; cv.height=rh;
+        cv.getContext('2d').drawImage(renderer.domElement, 0, 0, rw, rh);
+        out = cv;
+      }
+      accRT.dispose(); ptMat.dispose(); resMat.dispose();
+      quad.geometry.dispose(); rq.geometry.dispose();
+      ptDispose();
+      renderer.setSize(canvas.clientWidth||canvas.width, canvas.clientHeight||canvas.height, false);
+      renderer.setPixelRatio(savedPR);
+      three.photo = null; bar.style.display = 'none';
+      requestShadowUpdate(); requestRender();
+      three.ptResult = out;
+      if(ptOpts.onDone) ptOpts.onDone(out, spp);
+      else if(out) showPhotoResult(out);
+    };
+
+    const step = ()=>{
+      if(cancelled){ finish(true); return; }
+      const fs = performance.now();
+      renderer.autoClear = false;
+      while(performance.now()-fs < 60){
+        const tx = tile % TX, ty = (tile/TX)|0;
+        const x0 = Math.floor(tx*rw/TX), x1 = Math.floor((tx+1)*rw/TX);
+        const y0 = Math.floor(ty*rh/TY), y1 = Math.floor((ty+1)*rh/TY);
+        ptMat.uniforms.uFrame.value = spp*NT + tile + 1;
+        renderer.setRenderTarget(accRT);
+        renderer.setScissorTest(true);
+        renderer.setScissor(x0, y0, x1-x0, y1-y0);
+        renderer.setViewport(0, 0, rw, rh);
+        renderer.render(qs, oCam);
+        renderer.setScissorTest(false);
+        renderer.setRenderTarget(null);
+        tile++;
+        if(tile >= NT){ tile = 0; spp++; }
+        if(spp >= samples) break;
+      }
+      renderer.autoClear = savedAC;
+      // 实时预览：让用户看着它收敛
+      if(spp > 0){
+        resMat.uniforms.uN.value = spp;
+        renderer.setSize(rw, rh, false);
+        renderer.autoClear = true;
+        renderer.setRenderTarget(null);
+        renderer.render(rs, oCam);
+        renderer.autoClear = savedAC;
+      }
+      frames++;
+      const el = ((performance.now()-t0)/1000).toFixed(1);
+      lbl.textContent = '光线追踪渲染中… '+Math.round(spp/samples*100)+'%（'+spp+'/'+samples+
+        ' spp · '+el+'s · '+PT.nTri.toLocaleString()+' 三角形 / '+PT.nLight+' 光源）';
+      if(spp >= samples){ finish(false); return; }
+      setTimeout(step, 0);
+    };
+    setTimeout(step, 0);
+  }, 40);
+}
 /* ===== 高精度建模基础件：圆角体 / 软包 / 锥形腿 / 织物·木纹贴图 ===== */
 let _fabTex=null, _fwoodTex=null;
 function fabricTexture(){
@@ -4817,7 +5594,7 @@ function setCamMode(m){
     controls.enabled=false;
     cam.fov=68; cam.updateProjectionMatrix();
     fpAim();
-    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>双击地面=走过去</b> · <b>拖动家具=移动（Shift 拖=旋转）</b> · W/A/S/D=走动 · 滚轮=前后';
+    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>双击地面=走过去</b> · W/A/S/D=走动 · 滚轮=前后（摆家具请切娃娃屋视角）';
   } else {
     if(three.camMode!=='doll'){ three.fpPos=cam.position.clone();
       three.fpDir=controls.target.clone().sub(cam.position).normalize(); }
@@ -4920,6 +5697,7 @@ function groundAt(ev){
   let d3=null;
   canvas.addEventListener('pointerdown', ev=>{
     if(!three || state.view!=='3d' || wallEdit.on || ev.button!==0) return;
+    if(three.camMode==='fp') return;              // 室内视角只走动/看，不动家具（会误触）
     const hit=pickFurniture(ev); if(!hit) return;
     const it=state.items.find(i=>i.uid===hit.uid); if(!it) return;
     const g0=groundAt(ev); if(!g0) return;
@@ -5042,6 +5820,10 @@ window.addEventListener('keydown', e=>{
 $('#btnPhoto').onclick=()=>{ $('#btnPhoto').blur();
   if(state.view!=='3d'){ setView('3d'); setTimeout(()=>photoRender(240), 900); }
   else photoRender(240);
+};
+$('#btnPT').onclick=()=>{ $('#btnPT').blur();
+  if(state.view!=='3d'){ setView('3d'); setTimeout(()=>ptRender(400), 900); }
+  else ptRender(400);
 };
 $('#photoCancel').onclick=()=>{ if(three&&three.photo) three.photo.cancel(); };
 $('#photoModal').onclick=(e)=>{ if(e.target.id==='photoModal') e.target.style.display='none'; };
