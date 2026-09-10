@@ -138,7 +138,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v2.8</small></div>
+  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v2.9</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btn3d">3D 渲染</button>
@@ -205,7 +205,7 @@
 <div id="photoModal" style="display:none"><div id="photoOut"></div></div>
 <div id="main">
   <div id="catalog">
-    <div class="search"><input id="catSearch" type="text" placeholder="搜索家具（如 KIVIK / 沙发）"></div>
+    <div class="search"><input id="catSearch" type="text" placeholder="搜索家具（如 poang→POÄNG / 沙发）"></div>
     <div id="catList"></div>
     <div id="customForm">
       <h3>＋ 自定义家具（网上看中的）</h3>
@@ -4557,12 +4557,28 @@ function sync3Dfull(){                                 // 强制全量重建（�
 /* =====================================================================
    UI
    ===================================================================== */
+/* 瑞典语字母折叠：目录里有 Å/Ä/Ö（还有当直径符号用的 Ø），英文键盘打不出来。
+   搜索时把「查询词」和「商品名」两边都折成 ASCII 再比对，所以 poang / POÄNG /
+   poäng 都能搜到 POÄNG，而列表显示的仍然是正确的瑞典语拼写。
+   NFD 分解能处理 å ä ö é ü 这类「基字母+变音符」；ø æ ß đ ł ð þ 不可分解，单独映射。*/
+const FOLD_EXTRA = {'ø':'o','æ':'ae','ß':'ss','œ':'oe','đ':'d','ł':'l','ð':'d','þ':'th','ŋ':'n'};
+const _foldCache = new Map();
+function foldText(s){
+  if(!s) return '';
+  const hit=_foldCache.get(s); if(hit!==undefined) return hit;
+  const v = s.toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')        // 去掉变音符号（CJK 不受影响）
+    .replace(/[øæßœđłðþŋ]/g, ch=>FOLD_EXTRA[ch]||ch);
+  if(_foldCache.size<4000) _foldCache.set(s, v);            // 逐字输入会产生很多临时串，封顶
+  return v;
+}
 function buildCatalog(filter=''){
   const listEl = $('#catList'); listEl.innerHTML='';
   const cats = {};
   const all = [...CATALOG, ...state.customCat];
+  const q = foldText(String(filter).trim());
   for(const c of all){
-    if(filter && !(c.name.toLowerCase().includes(filter) || c.cat.includes(filter))) continue;
+    if(q && !(foldText(c.name).includes(q) || foldText(c.cat).includes(q))) continue;
     (cats[c.cat] = cats[c.cat]||[]).push(c);
   }
   let first=true;
@@ -4655,11 +4671,11 @@ $('#cfAdd').onclick=()=>{
   if(!w||!d){ alert('请填写宽度和深度（cm）'); return; }
   const id='custom_'+Date.now();
   state.customCat.push({id, cat:'自定义', name, w, d, h, color:$('#cfColor').value, kind:'box', img:$('#cfImg').value.trim()||null, price:0});
-  buildCatalog($('#catSearch').value.trim().toLowerCase());
+  buildCatalog($('#catSearch').value);
   addItem(id);
   $('#cfName').value=''; $('#cfW').value=''; $('#cfD').value=''; $('#cfH').value=''; $('#cfImg').value='';
 };
-$('#catSearch').addEventListener('input', e=>buildCatalog(e.target.value.trim().toLowerCase()));
+$('#catSearch').addEventListener('input', e=>buildCatalog(e.target.value));
 
 /* 视图切换 */
 $('#btn2d').onclick=()=>setView('2d');
