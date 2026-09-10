@@ -138,7 +138,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v2.1</small></div>
+  <div class="title">家具规划器<small>2室2卫 · 客厅 23'×12' · v2.8</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btn3d">3D 渲染</button>
@@ -146,6 +146,10 @@
   <div class="seg" id="camSeg" style="display:none">
     <button id="camDoll" class="on">娃娃屋</button>
     <button id="camFP">室内视角</button>
+  </div>
+  <div class="seg" id="lampSeg" style="display:none">
+    <button id="lampOn" class="on">灯 开</button>
+    <button id="lampOff">灯 关</button>
   </div>
   <div class="seg" id="dnSeg" style="display:none">
     <button id="dnDay" class="on">白天</button>
@@ -2462,9 +2466,21 @@ function applyLightMode(){
     hemi.color.set(0xbfd4ff); hemi.groundColor.set(0x3a3226); hemi.intensity=0.55;
     renderer.toneMappingExposure=0.92;
   }
-  const fix = fp ? 1 : 0.06;                 // 娃娃屋里灯具几乎不参与照明，避免局部过曝
-  three.furnGroup.traverse(o=>{ if(o.isLight && o.userData.baseI!=null) o.intensity=o.userData.baseI*fix; });
+  const on = three.lightsOn!==false;
+  const fix = !on ? 0 : (fp ? 1 : 0.06);     // 娃娃屋里灯具几乎不参与照明，避免局部过曝
+  three.furnGroup.traverse(o=>{
+    if(o.isLight && o.userData.baseI!=null) o.intensity=o.userData.baseI*fix;
+    if(o.isMesh && o.material && o.material.userData && o.material.userData.emisBase!=null)
+      o.material.emissiveIntensity = on ? o.material.userData.emisBase : 0.0;
+  });
   requestShadowUpdate();
+}
+function setLights(on){
+  if(!three) return;
+  three.lightsOn = !!on;
+  $('#lampOn').classList.toggle('on', !!on);
+  $('#lampOff').classList.toggle('on', !on);
+  applyLightMode(); requestRender();
 }
 /* 窗外景只在室内视角渲染；娃娃屋视角保持干净背景 */
 function applyBackdrop(){
@@ -4096,6 +4112,7 @@ function furn3D(it, spec){
   if(isLight(spec)){
     const cct=itemCCT(it), lm=itemLum(it), lc=cctToRGB(cct);
     const emis=new THREE.MeshStandardMaterial({color:0xffffff, emissive:lc, emissiveIntensity:2.4, roughness:.85});
+    emis.userData.emisBase=2.4;   // 供总开关关灯时熄灭灯罩
     const trim=new THREE.MeshStandardMaterial({color:new THREE.Color(itemColor(it)), roughness:.45, metalness:.35});
     const P=(y,dist,ang)=>{ // 统一造光源：吸顶用聚光，吊灯/镜前灯用点光
       // 家用灯具是漫射光源，不是舞台聚光：主体一律用点光（全向泛光），
@@ -4655,9 +4672,10 @@ function setView(v){
   $('#c3d').style.display = v==='3d'?'block':'none';
   $('#hint').innerHTML = v==='2d'
     ? '拖动=移动 · 圆点手柄/R键=旋转（Shift自由/[ ]微调）· D=复制 · Delete=删除 · 滚轮=缩放 · 拖空白=平移<br><b>在地面双击 = 站到该处进入室内视角</b> · 红色描边 = 与其他家具重叠'
-    : '左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
+    : '左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · <b>拖动家具=移动（按住 Shift 拖=旋转）</b>';
   $('#camSeg').style.display = v==='3d'?'flex':'none';
   $('#dnSeg').style.display = v==='3d'?'flex':'none';
+  $('#lampSeg').style.display = v==='3d'?'flex':'none';
   if(v==='3d'){
     show3DLoading(three?'正在更新 3D 场景…':'正在生成 3D 场景（首次需要几秒）…');
     // 用 setTimeout 而非 rAF 派发：无合成帧时 rAF 可能一直不触发，会把场景卡住不建
@@ -4783,7 +4801,7 @@ function setCamMode(m){
     controls.enabled=false;
     cam.fov=68; cam.updateProjectionMatrix();
     fpAim();
-    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>双击地面=走过去</b> · W/A/S/D=走动（Shift 加速）· 滚轮=前后 · 右键拖动=平移站位';
+    $('#hint').innerHTML='室内视角：左键拖动=<b>原地转头</b> · <b>双击地面=走过去</b> · <b>拖动家具=移动（Shift 拖=旋转）</b> · W/A/S/D=走动 · 滚轮=前后';
   } else {
     if(three.camMode!=='doll'){ three.fpPos=cam.position.clone();
       three.fpDir=controls.target.clone().sub(cam.position).normalize(); }
@@ -4793,7 +4811,7 @@ function setCamMode(m){
     controls.maxPolarAngle=Math.PI/2-0.02;
     cam.fov=55; cam.updateProjectionMatrix();
     cam.position.set(28, 42, 50); controls.target.set(26,0,20);
-    $('#hint').innerHTML='左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · 家具编辑请回到 2D 平面';
+    $('#hint').innerHTML='左键拖动=环绕 · <b>Shift+左键 / 右键 = 平移</b> · 滚轮=缩放 · <b>拖动家具=移动（Shift 拖=旋转）</b>';
   }
   applyBackdrop(); applyLightMode();
   controls.update(); requestRender();
@@ -4843,11 +4861,92 @@ function walkTo(x,z){
   }, 16);
   three.walk=anim;
 }
+/* ===== 3D 里直接拖动家具：射线拾取 → 投影到地面 → 改 x/y（Shift 拖动=就地旋转） ===== */
+function pickFurniture(ev){
+  if(!three) return null;
+  const cv=three.canvas, r=cv.getBoundingClientRect();
+  // r147 的 Raycaster 不刷新 matrixWorld，而本 app 按需渲染：刚改完位姿还没渲染就射线，会打到旧位置
+  three.cam.updateMatrixWorld(true);
+  three.furnGroup.updateMatrixWorld(true);
+  const ndc=new THREE.Vector2(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+  const rc=new THREE.Raycaster(); rc.setFromCamera(ndc, three.cam);
+  const hits=rc.intersectObjects(three.furnGroup.children, true);
+  if(!hits.length || !three.furnMap) return null;
+  const g2uid=new Map();
+  for(const [uid,rec] of three.furnMap) g2uid.set(rec.g, uid);
+  const cands=[];
+  for(const h of hits){
+    let o=h.object;
+    while(o && o.parent!==three.furnGroup) o=o.parent;   // 回溯到家具组
+    if(!o) continue;
+    const uid=g2uid.get(o); if(uid==null) continue;
+    if(cands.some(c=>c.uid===uid)) continue;
+    const it=state.items.find(i=>i.uid===uid);
+    const sp=it?itemSpec(it):null;
+    cands.push({uid, group:o, point:h.point, isLight:!!(sp&&isLight(sp))});
+  }
+  if(!cands.length) return null;
+  // 俯视时吸顶灯永远挡在射线最前面；只要底下还有别的家具，就优先拾取家具
+  const nonLight=cands.filter(c=>!c.isLight);
+  const pick = nonLight.length ? nonLight[0] : cands[0];
+  return {uid:pick.uid, group:pick.group, point:pick.point};
+}
+function groundAt(ev){
+  const cv=three.canvas, r=cv.getBoundingClientRect();
+  three.cam.updateMatrixWorld(true);
+  const ndc=new THREE.Vector2(((ev.clientX-r.left)/r.width)*2-1, -((ev.clientY-r.top)/r.height)*2+1);
+  const rc=new THREE.Raycaster(); rc.setFromCamera(ndc, three.cam);
+  const p=new THREE.Vector3();
+  return rc.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0,1,0),0), p) ? p : null;
+}
+(function install3DDrag(){
+  const canvas=$('#c3d'); if(!canvas) return;
+  let d3=null;
+  canvas.addEventListener('pointerdown', ev=>{
+    if(!three || state.view!=='3d' || wallEdit.on || ev.button!==0) return;
+    const hit=pickFurniture(ev); if(!hit) return;
+    const it=state.items.find(i=>i.uid===hit.uid); if(!it) return;
+    const g0=groundAt(ev); if(!g0) return;
+    selected=hit.uid; drawFurniture(); updateProps();
+    d3={uid:hit.uid, dx:it.x-g0.x, dy:it.y-g0.z, rot0:it.rot||0,
+        sx:ev.clientX, moved:false, wasCtl:three.controls.enabled};
+    three.controls.enabled=false;                 // 拖家具时不要转相机
+    three.dragging3D=true;
+    try{ canvas.setPointerCapture(ev.pointerId); }catch(_){}
+    ev.stopPropagation();
+  }, true);                                        // 捕获阶段：抢在 FP 转头/Orbit 之前
+  canvas.addEventListener('pointermove', ev=>{
+    if(!d3) return;
+    const it=state.items.find(i=>i.uid===d3.uid); if(!it) return;
+    if(ev.shiftKey){                               // Shift 拖动 = 就地旋转
+      it.rot = Math.round((d3.rot0 + (ev.clientX-d3.sx)*0.5)*10)/10;
+    } else {
+      const p=groundAt(ev); if(!p) return;
+      it.x = Math.round((p.x+d3.dx)*100)/100;
+      it.y = Math.round((p.z+d3.dy)*100)/100;
+    }
+    d3.moved=true;
+    drawFurniture();                               // 内部会 sync3D（增量，约 4ms）
+    ev.stopPropagation();
+  }, true);
+  const endDrag=ev=>{
+    if(!d3) return;
+    three.controls.enabled=d3.wasCtl;
+    three.dragging3D=false;
+    if(d3.moved) save();
+    d3=null;
+    try{ canvas.releasePointerCapture(ev.pointerId); }catch(_){}
+  };
+  canvas.addEventListener('pointerup', endDrag, true);
+  canvas.addEventListener('pointercancel', endDrag, true);
+})();
 (function installFPLook(){
   const canvas=$('#c3d'); if(!canvas) return;
   let drag=null;
   canvas.addEventListener('dblclick', e=>{      // 双击地面=走过去（Google 街景逻辑）
     if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+    if(pickFurniture(e)) return;                 // 双击家具不触发走动
+
     const r=canvas.getBoundingClientRect();
     const ndc=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
     three.cam.updateMatrixWorld(true);      // 射线必须基于最新的相机矩阵
@@ -4859,6 +4958,7 @@ function walkTo(x,z){
   });
   canvas.addEventListener('pointerdown', e=>{
     if(!three || three.camMode!=='fp' || state.view!=='3d') return;
+    if(three.dragging3D) return;                 // 正在拖家具，不要同时转头
     drag={x:e.clientX, y:e.clientY, btn:e.button};
     try{ canvas.setPointerCapture(e.pointerId); }catch(_){}
   });
@@ -4912,6 +5012,8 @@ function fpStep(){
   cam.position.add(mv); cam.position.y=EYE_H;
   fpAim();
 }
+$('#lampOn').onclick=()=>{ $('#lampOn').blur(); setLights(true); };
+$('#lampOff').onclick=()=>{ $('#lampOff').blur(); setLights(false); };
 $('#dnDay').onclick=()=>{ $('#dnDay').blur(); setDayNight(false); };
 $('#dnNight').onclick=()=>{ $('#dnNight').blur(); setDayNight(true); };
 $('#camDoll').onclick=()=>{ $('#camDoll').blur(); setCamMode('doll'); };
@@ -5269,6 +5371,7 @@ async function runWETest(){
     fire('pointerup',zx+2*ppf,zy); await tick();
     T('bug9-delete-during-drag', window.__ERRS.length===0, JSON.stringify(window.__ERRS));
     USERGEO.ovD={}; USERGEO.ovW={}; USERGEO.hiddenW=[]; USERGEO.hiddenD=[]; wallEdit.sel=null; geoChanged(); await tick();
+
   }catch(e){ log.push('EXC '+e.message+' | '+(e.stack||'').split('\n')[1]); }
   log.push('ERRS: '+JSON.stringify(window.__ERRS));
   const pre=document.createElement('pre'); pre.id='wetest'; pre.textContent=log.join('\n');

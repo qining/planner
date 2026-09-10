@@ -261,8 +261,8 @@
   </div>
 </div>
 
-<script src="lib/three.min.js"></script>
-<script src="lib/OrbitControls.js"></script>
+<script src="../lib/three.min.js"></script>
+<script src="../lib/OrbitControls.js"></script>
 <script>
 'use strict';
 /* =====================================================================
@@ -1079,7 +1079,7 @@ function wallPolys(){
 
 const CALIB = location.hash==='#calib' || location.hash==='#calibimg';
 const IMGONLY = location.hash==='#calibimg';   // 只渲染底图（用于两层绝对位置对比）
-const CAL = {img:'work/clean_plan.jpg', w:591, h:480}; // 干净图纸叠底：1px = 1/11.2 ft，原点对齐
+const CAL = {img:'clean_plan.jpg', w:591, h:480}; // 干净图纸叠底：1px = 1/11.2 ft，原点对齐
 function build2D(){
   svg.innerHTML='';
   svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
@@ -5112,6 +5112,87 @@ window.addEventListener('hashchange', ()=>location.reload()); // hash 切换时�
 // 同步3D当家具变动（简单节流）
 const _origDraw = drawFurniture;
 drawFurniture = function(){ _origDraw(); if(three && state.view==='3d') sync3D(); };
+</script>
+
+<script>
+window.__E3=[];
+window.addEventListener('error', e=>window.__E3.push(e.message+' :'+e.lineno));
+window.addEventListener('load', ()=>{ setTimeout(run3DTest, 500); });
+async function run3DTest(){
+  const log=[];
+  const T=(n,ok,x)=>log.push((ok?'PASS':'FAIL')+' '+n+(x!==undefined?' | '+x:''));
+  const wait=(ms)=>new Promise(r=>setTimeout(r,ms||150));
+  const origCap=Element.prototype.setPointerCapture;
+  Element.prototype.setPointerCapture=function(id){ try{ origCap.call(this,id); }catch(e){} };
+  try{
+    try{ localStorage.removeItem('planner_v1'); }catch(e){}
+    state.items=[]; save=()=>{};
+    const arm=CATALOG.find(c=>c.model==='saltsjobaden');
+    state.items.push({uid:uidSeq++, ref:arm.id, x:22, y:26, rot:0});
+    const cl=CATALOG.find(c=>c.id==='cl-flush');
+    state.items.push({uid:uidSeq++, ref:cl.id, x:22, y:22, rot:0});
+    refresh(); setView('3d'); await wait(3000);
+    setCamMode('doll');
+    three.controls.target.set(22,1,26); three.cam.position.set(22,14,40);
+    three.cam.fov=45; three.cam.updateProjectionMatrix(); three.controls.update();
+    await wait(400);
+    const cv=document.querySelector('#c3d'), r=cv.getBoundingClientRect();
+    const it=state.items[0], lamp=state.items[1];
+    const proj=(x,y,z)=>{ three.cam.updateMatrixWorld(true);
+      const v=new THREE.Vector3(x,y,z).project(three.cam);
+      return [r.left+(v.x*0.5+0.5)*r.width, r.top+(-v.y*0.5+0.5)*r.height]; };
+    const PE=(t,x,y,o)=>cv.dispatchEvent(new PointerEvent(t,Object.assign(
+      {bubbles:true,cancelable:true,clientX:x,clientY:y,pointerId:1,pointerType:'mouse',
+       button:0,buttons:1,isPrimary:true},o||{})));
+    const uidAt=(x,y)=>((pickFurniture({clientX:x,clientY:y})||{}).uid);
+
+    let [ax,ay]=proj(it.x,1.2,it.y);
+    T('3d-pick-furniture', uidAt(ax,ay)===it.uid, 'uid='+uidAt(ax,ay));
+
+    const camP0=three.cam.position.clone(), x0=it.x, y0=it.y;
+    PE('pointerdown',ax,ay); await wait(80);
+    T('3d-drag-takes-over-camera', three.dragging3D===true && three.controls.enabled===false);
+    PE('pointermove',ax+90,ay+40); await wait(80);
+    PE('pointerup',ax+90,ay+40); await wait(150);
+    T('3d-drag-moves-item', Math.hypot(it.x-x0,it.y-y0)>0.5, 'd='+Math.hypot(it.x-x0,it.y-y0).toFixed(2)+'ft');
+    T('3d-drag-camera-unmoved', three.cam.position.distanceTo(camP0)<1e-6);
+    T('3d-drag-restores-controls', three.controls.enabled===true && three.dragging3D===false);
+    T('3d-drag-selects', selected===it.uid);
+
+    // 拖完立刻再拾取：matrixWorld 必须已刷新（r147 Raycaster 不会自己更新）
+    let [bx,by]=proj(it.x,1.2,it.y);
+    T('3d-pick-after-move', uidAt(bx,by)===it.uid, 'uid='+uidAt(bx,by));
+
+    // 吸顶灯压在家具正上方时，应优先拾取家具
+    lamp.x=it.x; lamp.y=it.y; drawFurniture(); await wait(150);
+    [bx,by]=proj(it.x,1.2,it.y);
+    T('3d-pick-prefers-furniture-over-light', uidAt(bx,by)===it.uid, 'uid='+uidAt(bx,by));
+
+    // Shift 拖动 = 原地旋转（位置不得改变）
+    const rot0=it.rot||0, px0=it.x, py0=it.y;
+    PE('pointerdown',bx,by,{shiftKey:true}); await wait(80);
+    PE('pointermove',bx+80,by,{shiftKey:true}); await wait(80);
+    PE('pointerup',bx+80,by,{shiftKey:true}); await wait(120);
+    T('3d-shift-drag-rotates', Math.abs(it.rot-rot0)>10 && Math.hypot(it.x-px0,it.y-py0)<0.01,
+      'drot='+(it.rot-rot0).toFixed(1)+'° dpos='+Math.hypot(it.x-px0,it.y-py0).toFixed(3));
+
+    // 全局开关灯（室内视角，灯具此时才满强度）
+    setCamMode('fp'); await wait(400);
+    const lsum=()=>{ let s=0; three.furnGroup.traverse(o=>{ if(o.isLight) s+=o.intensity; }); return s; };
+    const esum=()=>{ let s=0; three.furnGroup.traverse(o=>{ if(o.isMesh&&o.material&&o.material.userData
+      &&o.material.userData.emisBase!=null) s+=o.material.emissiveIntensity; }); return s; };
+    setLights(true); await wait(200); const ion=lsum(), eon=esum();
+    T('3d-lamp-toggle-visible', getComputedStyle(document.querySelector('#lampSeg')).display!=='none');
+    setLights(false); await wait(200);
+    T('3d-lights-off-zero-intensity', lsum()===0, 'on='+ion.toFixed(1)+' off='+lsum());
+    T('3d-lights-off-no-emissive', esum()===0, 'on='+eon.toFixed(1));
+    setLights(true); await wait(200);
+    T('3d-lights-on-restores', Math.abs(lsum()-ion)<1e-6, ion.toFixed(1));
+  }catch(e){ log.push('EXC '+e.message+' | '+(e.stack||'').split('\n')[1]); }
+  log.push('ERRS: '+JSON.stringify(window.__E3));
+  const pre=document.createElement('pre'); pre.id='t3d'; pre.textContent=log.join('\n');
+  document.body.appendChild(pre);
+}
 </script>
 </body>
 </html>
