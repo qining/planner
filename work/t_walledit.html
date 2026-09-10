@@ -200,7 +200,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.6</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.7</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -3846,6 +3846,19 @@ void main(){
 }
 `;
 
+/* 分块数决策（抽成纯函数是为了能单测——真实 GPU 计时在 headless 下测不到）。
+   目标：任何显卡上单个 draw 都短于看门狗阈值。TILE_MAX 取 70ms，
+   离常见的 2s 阈值有近 30 倍余量。 */
+function ptPickGrid(perPx, px, minTX, maxTX, tileMax){
+  let want = minTX;
+  while(want < maxTX && perPx * px / (want*want) > tileMax) want *= 2;
+  return want;
+}
+function ptAdjustGrid(TX, perTile, minTX, maxTX, tileMax, tileMin){
+  if(perTile > tileMax && TX < maxTX) return TX*2;
+  if(perTile < tileMin && TX > minTX) return TX/2;
+  return TX;
+}
 /* ---------- 7. 渲染循环 ---------- */
 const PT_QUALITY = {
   draft:  {spp:120,  bounces:4, maxPx: 480*1000, label:'草稿'},
@@ -3939,12 +3952,17 @@ function ptRender(samples, ptOpts){
     renderer.setRenderTarget(accRT); renderer.setClearColor(0x000000,1); renderer.clear(true,true,true);
     renderer.setRenderTarget(null);
 
-    /* 分块要细。单个 draw 太长会踩到 GPU 看门狗：驱动重置上下文，
+    /* 分块必须细到「单个 draw 短于 GPU 看门狗阈值」。draw 一长驱动就重置上下文，
        累积缓冲被清空但采样计数还在涨，最后除以完整 spp 就得到一张欠曝多噪的图——
-       用户看到的现象是「进度卡在 40% 很久，然后突然结束，图像像只跑了一半」。 */
-    const TX = 8, NT = TX*TX;                  // 8x8 分块
-    let spp = 0, tile = 0, tilesDone = 0;
-    const totalTiles = samples*NT;
+       用户看到的现象是「进度卡在 40% 很久，然后突然结束，图像像只跑了一半」。
+
+       格子数不能拍脑袋定死：同样 8x8，强显卡上一块 3ms、弱显卡上可能 300ms。
+       下面按实测的单块耗时自适应——开头先标定一次，之后每轮采样边界再校正。
+       TILE_MAX 取 70ms：离常见的 2s 看门狗阈值有近 30 倍余量。 */
+    let TX = 8, NT = TX*TX;                    // 起步 8x8，标定后可能升到 32x32
+    const TX_MIN = 4, TX_MAX = 32;
+    const TILE_MAX = 70, TILE_MIN = 6;         // 单块目标耗时区间（ms）
+    let spp = 0, tile = 0, tilesDone = 0, gridNote = '', weakGPU = 0;
     const t0 = performance.now();
     let lastPreview = 0;
 
@@ -4034,12 +4052,53 @@ function ptRender(samples, ptOpts){
             + '建议把光追质量降一档，或把窗口调小一些再试。');
     };
 
+    /* 开跑前先标定：画一小条（1/64 画面）量出满负载耗时，据此选初始格子数。
+       不标定的话，弱显卡要等第一块画完（可能好几秒）才知道该切细——而那一块
+       本身就可能已经把看门狗踩了。 */
+    const calibrate = ()=>{
+      if(!useFence) return;
+      const cw = Math.max(8, Math.round(rw/8)), ch2 = Math.max(8, Math.round(rh/8));
+      quad.material = ptMat; uni.uFrame.value = 1;
+      renderer.autoClear = false;
+      renderer.setRenderTarget(accRT);
+      renderer.setScissorTest(true);
+      renderer.setScissor(0, 0, cw, ch2);
+      renderer.setViewport(0, 0, rw, rh);
+      const tc = performance.now();
+      renderer.render(qs, oCam);
+      renderer.setScissorTest(false);
+      renderer.setRenderTarget(null);
+      renderer.autoClear = savedAC;
+      const gl2 = gl;
+      const f2 = gl2.fenceSync(gl2.SYNC_GPU_COMMANDS_COMPLETE, 0);
+      gl2.flush();
+      let r2, guard = 0;
+      do { r2 = gl2.clientWaitSync(f2, guard === 0 ? gl2.SYNC_FLUSH_COMMANDS_BIT : 0, 0); guard++; }
+      while(r2 === gl2.TIMEOUT_EXPIRED && guard < 4000);
+      gl2.deleteSync(f2);
+      const dt = performance.now() - tc;
+      if(dt <= 0) return;                        // 计时器被冻结（headless 虚拟时间）
+      const perPx = dt / (cw*ch2);               // ms/像素（满弹射、含 NEE）
+      const want = ptPickGrid(perPx, rw*rh, TX_MIN, TX_MAX, TILE_MAX);
+      if(want !== TX){ gridNote = '标定→'+want+'x'+want; TX = want; NT = TX*TX; }
+      // 切到最细格子仍然重，说明这台机器扛不住当前档位——如实告诉用户
+      if(perPx * (rw*rh) / (TX_MAX*TX_MAX) > TILE_MAX)
+        weakGPU = Math.round(perPx * (rw*rh) / (TX*TX));
+      perTile = perPx * (rw*rh) / NT;
+      batchTiles = Math.max(1, Math.min(NT, Math.round(40/Math.max(perTile, 0.5))));
+      // 标定那一小块也是有效采样，但只覆盖 1/64 画面，直接清掉避免那块偏亮
+      renderer.setRenderTarget(accRT);
+      renderer.setClearColor(0x000000, 1); renderer.clear(true, false, false);
+      renderer.setRenderTarget(null);
+    };
+    try{ calibrate(); }catch(e){ console.warn('分块标定失败，用默认 8x8:', e.message); }
+
     const step = ()=>{
       if(cancelled){ finish(true); return; }
       if(ctxLost){ finish(false); return; }        // 上下文没了：拿现有采样收工并告知
       if(!fenceReady()){                           // 上一批 GPU 还没画完就别再排新的
         const el0 = ((performance.now()-t0)/1000).toFixed(1);
-        lbl.textContent = '光线追踪 '+(tilesDone/totalTiles*100).toFixed(1)+'%（'+spp+'/'+samples
+        lbl.textContent = '光线追踪 '+(((spp + tile/NT)/samples)*100).toFixed(1)+'%（'+spp+'/'+samples
           +' spp · 已用 '+el0+'s · 等待 GPU…）';
         setTimeout(step, 8); return;
       }
@@ -4048,6 +4107,17 @@ function ptRender(samples, ptOpts){
       if(useFence && gpuMs > 0){
         perTile = gpuMs / Math.max(1, batchTiles);
         batchTiles = Math.max(1, Math.min(NT, Math.round(40 / Math.max(perTile, 0.5))));
+        /* 单块本身太重就把格子切细（弱显卡上 8x8 可能一块就几百毫秒）。
+           只在采样边界改，保证每个像素每轮恰好被采一次。 */
+        if(tile === 0){
+          const nx = ptAdjustGrid(TX, perTile, TX_MIN, TX_MAX, TILE_MAX, TILE_MIN);
+          if(nx !== TX){
+            gridNote = TX+'x'+TX+'→'+nx+'x'+nx;
+            TX = nx; NT = TX*TX;
+            perTile = perTile * (nx > TX ? 0.25 : 4);   // 面积变了，估值同步缩放
+            batchTiles = Math.max(1, Math.min(NT, Math.round(40/Math.max(perTile,0.5))));
+          }
+        }
       } else if(!useFence){
         batchTiles = NT;                       // 无栅栏可用：退回按帧排一整轮
       }
@@ -4076,13 +4146,16 @@ function ptRender(samples, ptOpts){
       const now = performance.now();
       if(spp > 0 && (now-lastPreview > 700 || spp >= samples)){ present(3); lastPreview = now; }
 
-      const frac = tilesDone/totalTiles;
+      // 进度按「完成的采样轮数」算，格子数中途变了也不会跳
+      const frac = (spp + tile/NT) / samples;
       const el = (now-t0)/1000;
       const eta = frac>0.004 ? Math.max(0, el/frac - el) : 0;
       const fmt = (v)=> v>=60 ? Math.floor(v/60)+'分'+String(Math.round(v%60)).padStart(2,'0')+'秒' : v.toFixed(0)+'秒';
       lbl.textContent = '光线追踪 '+(frac*100).toFixed(1)+'%（'+spp+'/'+samples+' spp · 已用 '+fmt(el)+
         (eta>1?' · 约剩 '+fmt(eta):'')+' · '+PT.nTri.toLocaleString()+' 三角形 / '+PT.nLight+' 光源'+
-        (denoiseOn?' · 降噪开':'')+(perTile>0?' · '+perTile.toFixed(0)+'ms/块':'')+'）';
+        (denoiseOn?' · 降噪开':'')
+        +(perTile>0?' · '+perTile.toFixed(0)+'ms/块 @'+TX+'x'+TX:'')+'）'
+        +(weakGPU? ' ⚠ 单块仍需 '+weakGPU+'ms，这台机器建议降到草稿档' : '');
       if(spp >= samples){ finish(false); return; }
       setTimeout(step, 0);
     };
