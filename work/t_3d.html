@@ -47,6 +47,14 @@
   #photoBar{display:flex; align-items:center; gap:12px; padding:7px 16px; background:#241c3d; border-bottom:1px solid #3a2f5e; color:#cfc6f0; font-size:13px;}
   #photoModal{position:fixed; inset:0; background:rgba(8,9,12,.93); z-index:50; align-items:center; justify-content:center;}
   #photoOut{text-align:center; padding:20px;}
+  #ptModal{position:fixed; inset:0; background:rgba(8,9,12,.72); z-index:60;
+    align-items:center; justify-content:center;}
+  #ptDlg{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:18px 20px 16px; min-width:340px; box-shadow:0 18px 60px rgba(0,0,0,.55);}
+  #ptDlg h3{font-size:14px; margin-bottom:14px;}
+  #ptDlg .ptRow{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  #ptDlg .ptRow>label{font-size:12px; color:var(--muted); width:34px; flex:none;}
+  #ptDlg .ptHint{font-size:11px; color:var(--muted); margin:0 0 12px 44px; line-height:1.5;}
   body.wall-editing #catalog, body.wall-editing #placedList, body.wall-editing #customForm{pointer-events:none; opacity:.4;}
   .wHit{cursor:pointer;} .pHit{cursor:pointer;}
   .wEnd,.pVert{cursor:grab;} .pMid{cursor:copy;}
@@ -200,7 +208,7 @@
 </head>
 <body>
 <div id="topbar">
-  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.7</small></div>
+  <div class="title">家具规划器<small id="titleSub">2室2卫 · v3.8</small></div>
   <div class="seg" id="viewSeg">
     <button id="btn2d" class="on">2D 平面</button>
     <button id="btnDoll">3D 俯瞰</button>
@@ -209,15 +217,6 @@
   <div class="seg" id="lampSeg" style="display:none">
     <button id="lampOn" class="on">灯 开</button>
     <button id="lampOff">灯 关</button>
-  </div>
-  <div class="seg" id="ptSeg" style="display:none" title="光追质量：采样数 / 弹射次数 / 分辨率">
-    <button data-q="draft">草稿</button>
-    <button data-q="normal" class="on">标准</button>
-    <button data-q="fine">精细</button>
-  </div>
-  <div class="seg" id="ptDnSeg" style="display:none" title="À-Trous 边缘保持降噪：按法线/深度/颜色差滤波，贴图细节不受影响">
-    <button id="ptDnOn" class="on">降噪 开</button>
-    <button id="ptDnOff">降噪 关</button>
   </div>
   <div class="seg" id="dnSeg" style="display:none">
     <button id="dnDay" class="on">白天</button>
@@ -266,6 +265,28 @@
 <div id="photoBar" style="display:none"><span id="photoTxt">照片级渲染中…</span>
   <div style="flex:1"></div><button class="btn" id="photoCancel">取消</button></div>
 <div id="photoModal" style="display:none"><div id="photoOut"></div></div>
+<div id="ptModal" style="display:none"><div id="ptDlg">
+  <h3>光线追踪渲染</h3>
+  <div class="ptRow"><label>画质</label>
+    <span class="seg" id="ptSeg">
+      <button data-q="draft">草稿</button>
+      <button data-q="normal" class="on">标准</button>
+      <button data-q="fine">精细</button>
+    </span>
+  </div>
+  <div class="ptHint" id="ptQInfo"></div>
+  <div class="ptRow"><label>降噪</label>
+    <span class="seg" id="ptDnSeg">
+      <button id="ptDnOn" class="on">开</button>
+      <button id="ptDnOff">关</button>
+    </span>
+    <span class="ptHint" style="margin:0">À-Trous 保边滤波，贴图细节不受影响</span>
+  </div>
+  <div class="ptRow" style="justify-content:flex-end; margin-top:14px; gap:10px">
+    <button class="btn" id="ptCancel">取消</button>
+    <button class="btn primary" id="ptGo">开始渲染</button>
+  </div>
+</div></div>
 <div id="main">
   <div class="panelTab" id="catTab" title="展开家具目录">家具目录 ▸</div>
   <div id="catalog">
@@ -3796,6 +3817,15 @@ void main(){
   float kk[5]; kk[0]=0.0625; kk[1]=0.25; kk[2]=0.375; kk[3]=0.25; kk[4]=0.0625;
   vec3 sum = vec3(0.0); float wsum = 0.0;
   ivec2 R = ivec2(uRes);
+  /* 深度权重要沿「局部深度梯度」比，不能直接比深度差：
+     天花板、地板这类掠射面上相邻像素的深度本来就变化很快，
+     直接比深度差会把邻居全判成不同表面而拒绝，滤波在最需要它的地方失效
+     （真机出图里天花板噪得最厉害就是这个原因）。 */
+  float zL = texelFetch(tNrm, ivec2(max(p.x-1,0), p.y), 0).w;
+  float zR2= texelFetch(tNrm, ivec2(min(p.x+1,R.x-1), p.y), 0).w;
+  float zD = texelFetch(tNrm, ivec2(p.x, max(p.y-1,0)), 0).w;
+  float zU = texelFetch(tNrm, ivec2(p.x, min(p.y+1,R.y-1)), 0).w;
+  vec2 gz = vec2((zR2>0.0&&zL>0.0)?(zR2-zL)*0.5:0.0, (zU>0.0&&zD>0.0)?(zU-zD)*0.5:0.0);
   for(int dy = -2; dy <= 2; dy++){
     for(int dx = -2; dx <= 2; dx++){
       ivec2 q = p + ivec2(dx, dy)*uStep;
@@ -3804,9 +3834,16 @@ void main(){
       if(g.w <= 0.0) continue;
       vec3 c = texelFetch(tIn, q, 0).rgb;
       float wn = pow(max(dot(g0.xyz, g.xyz), 0.0), uSigN);
-      float wz = exp(-abs(g0.w - g.w) / (uSigZ * max(g0.w, 0.5)));
+      vec2 off = vec2(float(dx), float(dy)) * float(uStep);
+      float zPred = g0.w + dot(gz, off);                 // 按局部梯度外推的深度
+      float zTol = uSigZ * max(g0.w, 0.5) + abs(dot(gz, off)) * 2.0 + 0.01;
+      float wz = exp(-abs(zPred - g.w) / zTol);
       vec3 dc = c - c0;
-      float wc = exp(-dot(dc, dc) / uSigC);
+      /* 颜色相似度的 σ 必须相对于局部亮度，不能用绝对值：
+         室内日光场景的辐照度量级是 1~3，而原来的绝对 σ 只有 0.03 量级，
+         于是每个邻居都被判成「边缘」拒绝掉，整个滤波形同虚设
+         （真机 40spp 出图满屏噪点就是这个原因）。 */
+      float wc = exp(-dot(dc, dc) / max(1e-5, uSigC * (dot(c0, c0) + 0.05)));
       float w = kk[dx+2]*kk[dy+2]*wn*wz*wc;
       sum += c*w; wsum += w;
     }
@@ -3819,12 +3856,36 @@ const PT_DEMOD = `
 precision highp float;
 out vec4 outColor;
 uniform sampler2D tAcc, tAlb;
+uniform vec2 uRes;
 uniform float uN;
+/* 除掉 albedo 得到辐照度，顺便做一道萤火虫抑制。
+   为什么必须在降噪之前做：À-Trous 的颜色相似度权重会把孤立的超亮样本
+   当成「边缘」保留下来，越滤越突出——实测满家具客厅 40spp 出图满屏白点就是这个。
+   做法是把明显高于八邻域的像素压回邻域上限（邻域也亮的地方不动，所以真实高光不受影响）。 */
+vec3 demod(ivec2 q){
+  vec3 c = texelFetch(tAcc, q, 0).rgb / max(uN, 1.0);
+  vec3 a = max(texelFetch(tAlb, q, 0).rgb, vec3(0.045));
+  return c/a;
+}
 void main(){
   ivec2 p = ivec2(gl_FragCoord.xy);
-  vec3 c = texelFetch(tAcc, p, 0).rgb / max(uN, 1.0);
-  vec3 a = max(texelFetch(tAlb, p, 0).rgb, vec3(0.045));
-  outColor = vec4(c/a, 1.0);
+  vec3 c = demod(p);
+  ivec2 R = ivec2(uRes);
+  vec3 mx = vec3(0.0), sum = vec3(0.0); float cnt = 0.0;
+  for(int dy=-1; dy<=1; dy++) for(int dx=-1; dx<=1; dx++){
+    if(dx==0 && dy==0) continue;
+    ivec2 q = p + ivec2(dx,dy);
+    if(q.x<0||q.y<0||q.x>=R.x||q.y>=R.y) continue;
+    vec3 v = demod(q);
+    mx = max(mx, v); sum += v; cnt += 1.0;
+  }
+  if(cnt > 0.0){
+    vec3 mean = sum/cnt;
+    // 允许到「邻域最大值」和「均值的 3 倍」里更宽松的那个，再高就是孤点
+    vec3 lim = max(mx, mean*3.0);
+    c = min(c, lim);
+  }
+  outColor = vec4(c, 1.0);
 }
 `;
 /* 乘回 albedo → ACES → sRGB */
@@ -3926,7 +3987,8 @@ function ptRender(samples, ptOpts){
       tIn:{value:null}, tNrm:{value:nrmRT.texture}, uRes:{value:new THREE.Vector2(rw,rh)},
       uStep:{value:1}, uSigC:{value:0.6}, uSigN:{value:48.0}, uSigZ:{value:0.06}}}, false);
     const dmMat = mk(PT_DEMOD, {uniforms:{
-      tAcc:{value:accRT.texture}, tAlb:{value:albRT.texture}, uN:{value:1}}}, false);
+      tAcc:{value:accRT.texture}, tAlb:{value:albRT.texture}, uN:{value:1},
+      uRes:{value:new THREE.Vector2(rw,rh)}}}, false);
     const rsMat = mk(PT_RESOLVE, {uniforms:{
       tIrr:{value:dnA.texture}, tAlb:{value:albRT.texture}, tAcc:{value:accRT.texture},
       uExp:{value:renderer.toneMappingExposure}, uN:{value:1}, uDenoise:{value:denoiseOn?1:0}}}, false);
@@ -4007,7 +4069,8 @@ function ptRender(samples, ptOpts){
       dmMat.uniforms.uN.value = Math.max(1, spp);
       blit(dmMat, dnA);
       let src = dnA, dst = dnB;
-      dnMat.uniforms.uSigC.value = Math.max(0.010, 1.1/Math.max(1, spp));
+      // 现在 uSigC 是无量纲系数（见 shader 里的相对化）：采样越多噪声越小，σ 越紧
+      dnMat.uniforms.uSigC.value = Math.min(2.5, Math.max(0.02, 2.5/Math.max(1, spp)));
       for(let i=0;i<iters;i++){
         dnMat.uniforms.tIn.value = src.texture;
         dnMat.uniforms.uStep.value = 1<<i;
@@ -8088,8 +8151,6 @@ function setView(v){
   $('#lampSeg').style.display = in3?'flex':'none';
   // 光追只在室内视角有意义：俯瞰是掀了天花板的剖切图，追出来的光照根本不成立
   $('#btnPT').style.display = fp?'inline-block':'none';
-  $('#ptSeg').style.display = fp?'flex':'none';
-  $('#ptDnSeg').style.display = fp?'flex':'none';
   $('#measSeg').style.display = v==='2d'?'flex':'none';
   if(v!=='2d' && typeof measEnd==='function') measEnd();
   if(in3){
@@ -8292,8 +8353,6 @@ function setCamMode(m){
   $('#btnDoll').classList.toggle('on', m==='doll' && is3D());
   $('#btnFP').classList.toggle('on', inFP);
   $('#btnPT').style.display = inFP?'inline-block':'none';
-  $('#ptSeg').style.display = inFP?'flex':'none';
-  $('#ptDnSeg').style.display = inFP?'flex':'none';
   const {cam, controls} = three;
   if(m==='fp'){
     const p=three.fpPos || new THREE.Vector3(22, EYE_H, 27);
@@ -8539,22 +8598,41 @@ window.addEventListener('keydown', e=>{
   if(e.key.toLowerCase()==='v' && is3D()){ setCamMode(three&&three.camMode==='fp'?'doll':'fp'); }
 });
 /* 照片级渲染 */
-$('#btnPT').onclick=()=>{ $('#btnPT').blur();
+/* 画质只在真要渲染时才有意义，所以放在点「光追渲染」之后弹出的对话框里，
+   不占顶栏。选项仍然记在 state 里，下次打开保留上次的选择。 */
+$('#btnPT').onclick=()=>{ $('#btnPT').blur(); openPTDialog(); };
+function openPTDialog(){
+  syncPTUI();
+  $('#ptModal').style.display='flex';
+}
+function closePTDialog(){ $('#ptModal').style.display='none'; }
+$('#ptCancel').onclick=closePTDialog;
+$('#ptModal').onclick=(e)=>{ if(e.target.id==='ptModal') closePTDialog(); };
+$('#ptGo').onclick=()=>{
+  closePTDialog();
   if(state.view!=='fp'){ setView('fp'); setTimeout(()=>ptRender(), 900); }
   else ptRender();
 };
 document.querySelectorAll('#ptSeg button').forEach(b=>{ b.onclick=()=>{
   state.ptQ=b.dataset.q;
   document.querySelectorAll('#ptSeg button').forEach(x=>x.classList.toggle('on', x===b));
-  b.blur(); save();
+  b.blur(); syncPTUI(); save();
 };});
-$('#ptDnOn').onclick =()=>{ state.ptDN=true;  $('#ptDnOn').classList.add('on');  $('#ptDnOff').classList.remove('on'); save(); };
-$('#ptDnOff').onclick=()=>{ state.ptDN=false; $('#ptDnOff').classList.add('on'); $('#ptDnOn').classList.remove('on');  save(); };
+$('#ptDnOn').onclick =()=>{ state.ptDN=true;  syncPTUI(); save(); };
+$('#ptDnOff').onclick=()=>{ state.ptDN=false; syncPTUI(); save(); };
 function syncPTUI(){
   const q=state.ptQ||'normal';
   document.querySelectorAll('#ptSeg button').forEach(x=>x.classList.toggle('on', x.dataset.q===q));
   const on=state.ptDN!==false;
   $('#ptDnOn').classList.toggle('on', on); $('#ptDnOff').classList.toggle('on', !on);
+  // 把每档具体是什么写清楚，别让用户猜「精细」到底精细在哪
+  const Q=PT_QUALITY[q]||PT_QUALITY.normal;
+  const cv=three&&three.canvas, W=cv?(cv.clientWidth||cv.width):1280, H=cv?(cv.clientHeight||cv.height):800;
+  const sc=Math.min(1, Math.sqrt(Q.maxPx/(W*H)));
+  const info=$('#ptQInfo');
+  if(info) info.textContent = Q.spp+' 次采样 · '+Q.bounces+' 次弹射 · '
+    + Math.round(W*sc)+'×'+Math.round(H*sc)+' 像素'
+    + (q==='fine' ? '（很慢，弱显卡建议先用草稿试）' : q==='draft' ? '（最快，用来试构图）' : '');
 }
 $('#photoCancel').onclick=()=>{ if(three&&three.photo) three.photo.cancel(); };
 $('#photoModal').onclick=(e)=>{ if(e.target.id==='photoModal') e.target.style.display='none'; };
